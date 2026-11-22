@@ -11,6 +11,8 @@ export interface SearchOptions {
   maxWork?: number
   mbt?: boolean
   replay?: Event[]
+  /** Observe visited model states without making their contents a reduction goal. */
+  onState?: (state: RuntimeValue) => void
 }
 
 export interface SearchStats {
@@ -120,6 +122,7 @@ export function explore(spec: ExplorationSpec, options: SearchOptions): SearchRe
   const visit = (step: Transition) => {
     path.push(step)
     stats.prefixes++
+    options.onState?.(step.state)
     const { witnessed, violated } = machine.observe(step.state)
     witnessed.forEach(i => {
       result.witnessed[i] = true
