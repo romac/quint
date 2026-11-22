@@ -30,6 +30,10 @@ import { nameWithNamespaces } from '../runtime/impl/builder'
 import { Either, left, right } from '@sweet-monads/either'
 import { getRustEvaluatorPath } from './binaryManager'
 import { rustEvaluatorReplacer } from './helpers'
+import { ExplorationSpec } from '../runtime/exploration/machine'
+import { SearchOptions, SearchResult } from '../runtime/exploration/search'
+import { readSchedule, readValue, writeSchedule } from '../runtime/exploration/schedule'
+import { StubbornSets } from '../runtime/exploration/stubborn'
 
 export type ParsedQuint = {
   modules: QuintModule[]
@@ -145,6 +149,38 @@ export class CommandWrapper {
       return parsed
     } catch (error) {
       throw new Error(`Failed to parse data from Rust evaluator: ${error} ${JSONbig.stringify(error)}`)
+    }
+  }
+
+  async explore(spec: ExplorationSpec, options: Omit<SearchOptions, 'onState'>): Promise<SearchResult> {
+    const { replay, strategy, maxSteps, maxWork, maxStates, mbt } = options
+    const input = {
+      parsed: spec,
+      strategy,
+      maxSteps,
+      maxWork,
+      maxStates,
+      mbt,
+      replay: replay && JSON.parse(writeSchedule(replay)).events,
+      stubborn: strategy === 'por' ? StubbornSets.forSpec(spec)?.plan : undefined,
+    }
+    const output = await this.runRustEvaluator('explore-from-stdin', input)
+    if (output.isLeft()) {
+      const message = output.value.message
+      if (/unrecognized argument|unknown (command|subcommand)|unrecognized subcommand/i.test(message)) {
+        throw new Error(
+          'This Rust evaluator does not support systematic exploration. Build the fork with ' +
+            'cargo build --release --manifest-path evaluator/Cargo.toml or set QUINT_RUST_EVALUATOR to that binary.'
+        )
+      }
+      throw new Error(message)
+    }
+    const result = parseJsonBig(output.value)
+    return {
+      ...result,
+      trace: result.trace.map(readValue),
+      schedule: result.schedule.length ? readSchedule(JSON.stringify({ version: 1, events: result.schedule })) : [],
+      error: result.error && reviveQuintError(result.error),
     }
   }
 
@@ -280,7 +316,7 @@ export class CommandWrapper {
     input: any,
     progress?: { format: string; total: number }
   ): Promise<Either<QuintError, string>> {
-    const exe = await getRustEvaluatorPath()
+    const exe = await getRustEvaluatorPath(undefined, command === 'explore-from-stdin')
     const args = [command]
 
     const inputStr = JSONbig.stringify(input, rustEvaluatorReplacer)

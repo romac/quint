@@ -1,0 +1,1166 @@
+{
+  "environment": {
+    "runtimeTree": "61fcaa24f8f89f4ccf8790df7c2aec5fdbc39959",
+    "node": "v24.22.3",
+    "v8": "13.6.233.17-node.63",
+    "os": "Linux",
+    "release": "6.18.57",
+    "arch": "x64",
+    "cpu": "INTEL(R) XEON(R) PLATINUM 8573C"
+  },
+  "cases": [
+    {
+      "case": "tm4-d7",
+      "config": {
+        "file": "examples/cosmos/tendermint/TendermintPOR.qnt",
+        "main": "TendermintPOR",
+        "init": "Init",
+        "step": "Next",
+        "invariant": "Agreement",
+        "goal": "reachedQuorum",
+        "model": "tm4",
+        "depth": 7,
+        "maxWork": 2000000
+      },
+      "windowMs": 8000,
+      "reference": {
+        "method": "breadth-first full-state enumeration",
+        "total": 1455,
+        "layer": {
+          "depth": 7,
+          "distinct": 1455,
+          "newStates": 828,
+          "firstWitness": 4,
+          "evaluations": 59953,
+          "ms": 2897.867712999927
+        },
+        "layers": [
+          {
+            "depth": 0,
+            "distinct": 1,
+            "newStates": 1,
+            "firstWitness": null,
+            "evaluations": 1,
+            "ms": 1.0646539999870583
+          },
+          {
+            "depth": 1,
+            "distinct": 5,
+            "newStates": 4,
+            "firstWitness": null,
+            "evaluations": 49,
+            "ms": 5.962751999963075
+          },
+          {
+            "depth": 2,
+            "distinct": 18,
+            "newStates": 13,
+            "firstWitness": null,
+            "evaluations": 253,
+            "ms": 19.035157999955118
+          },
+          {
+            "depth": 3,
+            "distinct": 49,
+            "newStates": 31,
+            "firstWitness": null,
+            "evaluations": 953,
+            "ms": 61.6257349998923
+          },
+          {
+            "depth": 4,
+            "distinct": 91,
+            "newStates": 42,
+            "firstWitness": 4,
+            "evaluations": 2829,
+            "ms": 146.0043749999022
+          },
+          {
+            "depth": 5,
+            "distinct": 190,
+            "newStates": 99,
+            "firstWitness": 4,
+            "evaluations": 6045,
+            "ms": 287.544133999967
+          },
+          {
+            "depth": 6,
+            "distinct": 627,
+            "newStates": 437,
+            "firstWitness": 4,
+            "evaluations": 14433,
+            "ms": 713.108516999986
+          },
+          {
+            "depth": 7,
+            "distinct": 1455,
+            "newStates": 828,
+            "firstWitness": 4,
+            "evaluations": 59953,
+            "ms": 2897.867712999927
+          }
+        ]
+      },
+      "systematic": {
+        "exhaustive": {
+          "status": "ok",
+          "distinct": 1455,
+          "atWindow": 1152,
+          "ms": 73052.38187200006,
+          "witness": true,
+          "prefixes": 154710,
+          "schedules": 142776,
+          "slept": 0,
+          "stubbornPruned": 0,
+          "diamonds": 0,
+          "evaluations": 1233113
+        },
+        "por": {
+          "status": "ok",
+          "distinct": 1455,
+          "atWindow": 1184,
+          "ms": 57823.034766,
+          "witness": true,
+          "prefixes": 124422,
+          "schedules": 115374,
+          "slept": 33,
+          "stubbornPruned": 0,
+          "diamonds": 0,
+          "evaluations": 941164
+        },
+        "dpor": {
+          "status": "ok",
+          "distinct": 1455,
+          "atWindow": 1281,
+          "ms": 32491.889009000035,
+          "witness": true,
+          "prefixes": 41889,
+          "schedules": 37322,
+          "slept": 19791,
+          "stubbornPruned": 0,
+          "diamonds": 32076,
+          "evaluations": 541958
+        }
+      },
+      "random": [
+        {
+          "seed": "11400714819323198485",
+          "samplesAtWindow": 2205,
+          "atWindow": 849,
+          "samples": 2208,
+          "distinct": 849,
+          "witnessingTraces": 1229,
+          "ms": 8014.298243000056
+        },
+        {
+          "seed": "4354685564936845354",
+          "samplesAtWindow": 2123,
+          "atWindow": 841,
+          "samples": 2128,
+          "distinct": 841,
+          "witnessingTraces": 1177,
+          "ms": 8023.0581640000455
+        },
+        {
+          "seed": "15755400384260043839",
+          "samplesAtWindow": 2153,
+          "atWindow": 850,
+          "samples": 2160,
+          "distinct": 851,
+          "witnessingTraces": 1246,
+          "ms": 8023.406897000037
+        },
+        {
+          "seed": "8709371129873690708",
+          "samplesAtWindow": 2220,
+          "atWindow": 878,
+          "samples": 2224,
+          "distinct": 878,
+          "witnessingTraces": 1204,
+          "ms": 8010.733050000039
+        },
+        {
+          "seed": "1663341875487337577",
+          "samplesAtWindow": 2044,
+          "atWindow": 834,
+          "samples": 2048,
+          "distinct": 834,
+          "witnessingTraces": 1112,
+          "ms": 8012.515696999966
+        }
+      ]
+    },
+    {
+      "case": "tm4-d9",
+      "config": {
+        "file": "examples/cosmos/tendermint/TendermintPOR.qnt",
+        "main": "TendermintPOR",
+        "init": "Init",
+        "step": "Next",
+        "invariant": "Agreement",
+        "goal": "reachedQuorum",
+        "model": "tm4",
+        "depth": 9,
+        "maxWork": 500000
+      },
+      "windowMs": 8000,
+      "reference": {
+        "method": "breadth-first full-state enumeration",
+        "total": 3861,
+        "layer": {
+          "depth": 9,
+          "distinct": 3861,
+          "newStates": 1265,
+          "firstWitness": 4,
+          "evaluations": 300881,
+          "ms": 13310.459333999897
+        },
+        "layers": [
+          {
+            "depth": 0,
+            "distinct": 1,
+            "newStates": 1,
+            "firstWitness": null,
+            "evaluations": 1,
+            "ms": 1.0646539999870583
+          },
+          {
+            "depth": 1,
+            "distinct": 5,
+            "newStates": 4,
+            "firstWitness": null,
+            "evaluations": 49,
+            "ms": 5.962751999963075
+          },
+          {
+            "depth": 2,
+            "distinct": 18,
+            "newStates": 13,
+            "firstWitness": null,
+            "evaluations": 253,
+            "ms": 19.035157999955118
+          },
+          {
+            "depth": 3,
+            "distinct": 49,
+            "newStates": 31,
+            "firstWitness": null,
+            "evaluations": 953,
+            "ms": 61.6257349998923
+          },
+          {
+            "depth": 4,
+            "distinct": 91,
+            "newStates": 42,
+            "firstWitness": 4,
+            "evaluations": 2829,
+            "ms": 146.0043749999022
+          },
+          {
+            "depth": 5,
+            "distinct": 190,
+            "newStates": 99,
+            "firstWitness": 4,
+            "evaluations": 6045,
+            "ms": 287.544133999967
+          },
+          {
+            "depth": 6,
+            "distinct": 627,
+            "newStates": 437,
+            "firstWitness": 4,
+            "evaluations": 14433,
+            "ms": 713.108516999986
+          },
+          {
+            "depth": 7,
+            "distinct": 1455,
+            "newStates": 828,
+            "firstWitness": 4,
+            "evaluations": 59953,
+            "ms": 2897.867712999927
+          },
+          {
+            "depth": 8,
+            "distinct": 2596,
+            "newStates": 1141,
+            "firstWitness": 4,
+            "evaluations": 155433,
+            "ms": 7159.75093999994
+          },
+          {
+            "depth": 9,
+            "distinct": 3861,
+            "newStates": 1265,
+            "firstWitness": 4,
+            "evaluations": 300881,
+            "ms": 13310.459333999897
+          }
+        ]
+      },
+      "systematic": {
+        "por": {
+          "status": "incomplete",
+          "distinct": 1001,
+          "atWindow": 677,
+          "ms": 26733.88118399994,
+          "witness": true,
+          "prefixes": 39711,
+          "schedules": 35744,
+          "slept": 0,
+          "stubbornPruned": 0,
+          "diamonds": 0,
+          "evaluations": 500000
+        },
+        "dpor": {
+          "status": "incomplete",
+          "distinct": 1050,
+          "atWindow": 693,
+          "ms": 28213.95867600001,
+          "witness": true,
+          "prefixes": 28346,
+          "schedules": 24823,
+          "slept": 8669,
+          "stubbornPruned": 0,
+          "diamonds": 24920,
+          "evaluations": 500000
+        },
+        "exhaustive": {
+          "status": "incomplete",
+          "distinct": 1001,
+          "atWindow": 677,
+          "ms": 27029.647763999994,
+          "witness": true,
+          "prefixes": 39711,
+          "schedules": 35744,
+          "slept": 0,
+          "stubbornPruned": 0,
+          "diamonds": 0,
+          "evaluations": 500000
+        }
+      },
+      "random": [
+        {
+          "seed": "11400714819323198485",
+          "samplesAtWindow": 1296,
+          "atWindow": 1066,
+          "samples": 1312,
+          "distinct": 1069,
+          "witnessingTraces": 1240,
+          "ms": 8085.807248999947
+        },
+        {
+          "seed": "4354685564936845354",
+          "samplesAtWindow": 1318,
+          "atWindow": 1110,
+          "samples": 1328,
+          "distinct": 1113,
+          "witnessingTraces": 1248,
+          "ms": 8087.064921999932
+        },
+        {
+          "seed": "15755400384260043839",
+          "samplesAtWindow": 1368,
+          "atWindow": 1217,
+          "samples": 1376,
+          "distinct": 1225,
+          "witnessingTraces": 1289,
+          "ms": 8046.524900000077
+        },
+        {
+          "seed": "8709371129873690708",
+          "samplesAtWindow": 1313,
+          "atWindow": 1127,
+          "samples": 1328,
+          "distinct": 1137,
+          "witnessingTraces": 1266,
+          "ms": 8074.675692000077
+        },
+        {
+          "seed": "1663341875487337577",
+          "samplesAtWindow": 1326,
+          "atWindow": 1121,
+          "samples": 1328,
+          "distinct": 1123,
+          "witnessingTraces": 1245,
+          "ms": 8009.5010920000495
+        }
+      ]
+    },
+    {
+      "case": "tm7-d8",
+      "config": {
+        "file": "quint/benchmarks/exploration/ScaleModels.qnt",
+        "main": "SevenValidators",
+        "init": "Init",
+        "step": "Next",
+        "invariant": "Agreement",
+        "goal": "reachedQuorum",
+        "model": "tm7",
+        "depth": 8,
+        "maxWork": 500000
+      },
+      "windowMs": 8000,
+      "reference": {
+        "method": "breadth-first full-state enumeration",
+        "total": 30530,
+        "layer": {
+          "depth": 8,
+          "distinct": 30530,
+          "newStates": 25222,
+          "firstWitness": 6,
+          "evaluations": 1556794,
+          "ms": 67285.803083
+        },
+        "layers": [
+          {
+            "depth": 0,
+            "distinct": 1,
+            "newStates": 1,
+            "firstWitness": null,
+            "evaluations": 1,
+            "ms": 2.5057469999883324
+          },
+          {
+            "depth": 1,
+            "distinct": 8,
+            "newStates": 7,
+            "firstWitness": null,
+            "evaluations": 85,
+            "ms": 12.272269999986747
+          },
+          {
+            "depth": 2,
+            "distinct": 42,
+            "newStates": 34,
+            "firstWitness": null,
+            "evaluations": 715,
+            "ms": 53.44205199999851
+          },
+          {
+            "depth": 3,
+            "distinct": 185,
+            "newStates": 143,
+            "firstWitness": null,
+            "evaluations": 4019,
+            "ms": 218.16449500000454
+          },
+          {
+            "depth": 4,
+            "distinct": 605,
+            "newStates": 420,
+            "firstWitness": null,
+            "evaluations": 19594,
+            "ms": 908.3558309999935
+          },
+          {
+            "depth": 5,
+            "distinct": 1376,
+            "newStates": 771,
+            "firstWitness": null,
+            "evaluations": 76294,
+            "ms": 3286.0331749999896
+          },
+          {
+            "depth": 6,
+            "distinct": 2280,
+            "newStates": 904,
+            "firstWitness": 6,
+            "evaluations": 222685,
+            "ms": 8501.714991999994
+          },
+          {
+            "depth": 7,
+            "distinct": 5308,
+            "newStates": 3028,
+            "firstWitness": 6,
+            "evaluations": 495433,
+            "ms": 19840.518922999996
+          },
+          {
+            "depth": 8,
+            "distinct": 30530,
+            "newStates": 25222,
+            "firstWitness": 6,
+            "evaluations": 1556794,
+            "ms": 67285.803083
+          }
+        ]
+      },
+      "systematic": {
+        "dpor": {
+          "status": "incomplete",
+          "distinct": 7113,
+          "atWindow": 3294,
+          "ms": 26698.35711000001,
+          "witness": true,
+          "prefixes": 24259,
+          "schedules": 22937,
+          "slept": 1909,
+          "stubbornPruned": 0,
+          "diamonds": 5791,
+          "evaluations": 500000
+        },
+        "exhaustive": {
+          "status": "incomplete",
+          "distinct": 6019,
+          "atWindow": 2813,
+          "ms": 26869.99586199998,
+          "witness": true,
+          "prefixes": 29585,
+          "schedules": 28280,
+          "slept": 0,
+          "stubbornPruned": 0,
+          "diamonds": 0,
+          "evaluations": 500000
+        },
+        "por": {
+          "status": "incomplete",
+          "distinct": 6300,
+          "atWindow": 2888,
+          "ms": 27880.248194999993,
+          "witness": true,
+          "prefixes": 28816,
+          "schedules": 27482,
+          "slept": 179,
+          "stubbornPruned": 0,
+          "diamonds": 0,
+          "evaluations": 500000
+        }
+      },
+      "random": [
+        {
+          "seed": "11400714819323198485",
+          "samplesAtWindow": 1183,
+          "atWindow": 2860,
+          "samples": 1184,
+          "distinct": 2860,
+          "witnessingTraces": 248,
+          "ms": 8029.832080999971
+        },
+        {
+          "seed": "4354685564936845354",
+          "samplesAtWindow": 1112,
+          "atWindow": 2773,
+          "samples": 1120,
+          "distinct": 2777,
+          "witnessingTraces": 234,
+          "ms": 8044.481565999973
+        },
+        {
+          "seed": "15755400384260043839",
+          "samplesAtWindow": 1180,
+          "atWindow": 2798,
+          "samples": 1184,
+          "distinct": 2801,
+          "witnessingTraces": 270,
+          "ms": 8030.911112000002
+        },
+        {
+          "seed": "8709371129873690708",
+          "samplesAtWindow": 1205,
+          "atWindow": 2982,
+          "samples": 1216,
+          "distinct": 2990,
+          "witnessingTraces": 241,
+          "ms": 8070.454879999976
+        },
+        {
+          "seed": "1663341875487337577",
+          "samplesAtWindow": 1194,
+          "atWindow": 2934,
+          "samples": 1200,
+          "distinct": 2940,
+          "witnessingTraces": 264,
+          "ms": 8041.622054999985
+        }
+      ],
+      "dporAtBfsBudget": {
+        "maxWork": 1556794,
+        "checkpointMs": 67285.803083,
+        "status": "incomplete",
+        "distinct": 14151,
+        "atWindow": 13675,
+        "ms": 77642.331177,
+        "witness": true,
+        "prefixes": 74454,
+        "schedules": 70359,
+        "slept": 5908,
+        "stubbornPruned": 0,
+        "diamonds": 17462,
+        "evaluations": 1556794
+      }
+    },
+    {
+      "case": "timeout-d12",
+      "config": {
+        "file": "quint/benchmarks/exploration/ScaleModels.qnt",
+        "main": "TwelveTimeouts",
+        "init": "Init",
+        "step": "timeouts",
+        "invariant": "Agreement",
+        "goal": "allTimedOut",
+        "model": "timeout",
+        "depth": 12,
+        "maxWork": 500000
+      },
+      "windowMs": 8000,
+      "reference": {
+        "method": "breadth-first full-state enumeration",
+        "total": 4096,
+        "layer": {
+          "depth": 12,
+          "distinct": 4096,
+          "newStates": 1,
+          "firstWitness": 12,
+          "evaluations": 49141,
+          "ms": 6412.2455299999565
+        },
+        "layers": [
+          {
+            "depth": 0,
+            "distinct": 1,
+            "newStates": 1,
+            "firstWitness": null,
+            "evaluations": 1,
+            "ms": 3.3103269999846816
+          },
+          {
+            "depth": 1,
+            "distinct": 13,
+            "newStates": 12,
+            "firstWitness": null,
+            "evaluations": 13,
+            "ms": 17.53308999998262
+          },
+          {
+            "depth": 2,
+            "distinct": 79,
+            "newStates": 66,
+            "firstWitness": null,
+            "evaluations": 157,
+            "ms": 84.87455999996746
+          },
+          {
+            "depth": 3,
+            "distinct": 299,
+            "newStates": 220,
+            "firstWitness": null,
+            "evaluations": 949,
+            "ms": 307.4747609999613
+          },
+          {
+            "depth": 4,
+            "distinct": 794,
+            "newStates": 495,
+            "firstWitness": null,
+            "evaluations": 3589,
+            "ms": 865.0113519999431
+          },
+          {
+            "depth": 5,
+            "distinct": 1586,
+            "newStates": 792,
+            "firstWitness": null,
+            "evaluations": 9529,
+            "ms": 1968.2999329999438
+          },
+          {
+            "depth": 6,
+            "distinct": 2510,
+            "newStates": 924,
+            "firstWitness": null,
+            "evaluations": 19033,
+            "ms": 3365.7122129999916
+          },
+          {
+            "depth": 7,
+            "distinct": 3302,
+            "newStates": 792,
+            "firstWitness": null,
+            "evaluations": 30121,
+            "ms": 4752.079434999963
+          },
+          {
+            "depth": 8,
+            "distinct": 3797,
+            "newStates": 495,
+            "firstWitness": null,
+            "evaluations": 39625,
+            "ms": 5709.11019799998
+          },
+          {
+            "depth": 9,
+            "distinct": 4017,
+            "newStates": 220,
+            "firstWitness": null,
+            "evaluations": 45565,
+            "ms": 6185.0456229999545
+          },
+          {
+            "depth": 10,
+            "distinct": 4083,
+            "newStates": 66,
+            "firstWitness": null,
+            "evaluations": 48205,
+            "ms": 6354.640344999963
+          },
+          {
+            "depth": 11,
+            "distinct": 4095,
+            "newStates": 12,
+            "firstWitness": null,
+            "evaluations": 48997,
+            "ms": 6407.862240999995
+          },
+          {
+            "depth": 12,
+            "distinct": 4096,
+            "newStates": 1,
+            "firstWitness": 12,
+            "evaluations": 49141,
+            "ms": 6412.2455299999565
+          }
+        ]
+      },
+      "systematic": {
+        "exhaustive": {
+          "status": "incomplete",
+          "distinct": 251,
+          "atWindow": 128,
+          "ms": 56067.564068999956,
+          "witness": true,
+          "prefixes": 65920,
+          "schedules": 24248,
+          "slept": 0,
+          "stubbornPruned": 0,
+          "diamonds": 0,
+          "evaluations": 500000
+        },
+        "por": {
+          "status": "ok",
+          "distinct": 4096,
+          "atWindow": 3834,
+          "ms": 8610.445795000065,
+          "witness": true,
+          "prefixes": 4096,
+          "schedules": 1,
+          "slept": 20481,
+          "stubbornPruned": 0,
+          "diamonds": 0,
+          "evaluations": 65539
+        },
+        "dpor": {
+          "status": "ok",
+          "distinct": 4096,
+          "atWindow": 4096,
+          "ms": 7120.880114999949,
+          "witness": true,
+          "prefixes": 4096,
+          "schedules": 1,
+          "slept": 20481,
+          "stubbornPruned": 0,
+          "diamonds": 0,
+          "evaluations": 65539
+        }
+      },
+      "random": [
+        {
+          "seed": "11400714819323198485",
+          "samplesAtWindow": 800,
+          "atWindow": 2699,
+          "samples": 816,
+          "distinct": 2721,
+          "witnessingTraces": 816,
+          "ms": 8163.209820999997
+        },
+        {
+          "seed": "4354685564936845354",
+          "samplesAtWindow": 756,
+          "atWindow": 2589,
+          "samples": 768,
+          "distinct": 2612,
+          "witnessingTraces": 768,
+          "ms": 8110.335877000005
+        },
+        {
+          "seed": "15755400384260043839",
+          "samplesAtWindow": 743,
+          "atWindow": 2546,
+          "samples": 752,
+          "distinct": 2567,
+          "witnessingTraces": 752,
+          "ms": 8083.6969929999905
+        },
+        {
+          "seed": "8709371129873690708",
+          "samplesAtWindow": 767,
+          "atWindow": 2600,
+          "samples": 768,
+          "distinct": 2602,
+          "witnessingTraces": 768,
+          "ms": 8018.826197000104
+        },
+        {
+          "seed": "1663341875487337577",
+          "samplesAtWindow": 783,
+          "atWindow": 2627,
+          "samples": 784,
+          "distinct": 2627,
+          "witnessingTraces": 784,
+          "ms": 8012.4163100000005
+        }
+      ]
+    },
+    {
+      "case": "twophase-d14",
+      "config": {
+        "file": "quint/benchmarks/exploration/ScaleModels.qnt",
+        "main": "TwoPhaseEight",
+        "invariant": "consistencyInv",
+        "goal": "fourPrepares",
+        "model": "twophase",
+        "depth": 14,
+        "maxWork": 500000
+      },
+      "windowMs": 8000,
+      "reference": {
+        "method": "two-phase-commit shortest-distance polynomial",
+        "total": 1255810,
+        "checks": [
+          {
+            "managers": 3,
+            "layers": [
+              {
+                "depth": 0,
+                "distinct": 1,
+                "newStates": 1,
+                "firstWitness": null,
+                "evaluations": 1,
+                "ms": 4.646107000000029
+              },
+              {
+                "depth": 1,
+                "distinct": 8,
+                "newStates": 7,
+                "firstWitness": null,
+                "evaluations": 15,
+                "ms": 12.642945999999938
+              },
+              {
+                "depth": 2,
+                "distinct": 29,
+                "newStates": 21,
+                "firstWitness": null,
+                "evaluations": 113,
+                "ms": 32.365420000000086
+              },
+              {
+                "depth": 3,
+                "distinct": 67,
+                "newStates": 38,
+                "firstWitness": null,
+                "evaluations": 407,
+                "ms": 59.96183400000018
+              },
+              {
+                "depth": 4,
+                "distinct": 117,
+                "newStates": 50,
+                "firstWitness": 4,
+                "evaluations": 939,
+                "ms": 92.9232750000001
+              },
+              {
+                "depth": 5,
+                "distinct": 171,
+                "newStates": 54,
+                "firstWitness": 4,
+                "evaluations": 1639,
+                "ms": 134.08003099999996
+              },
+              {
+                "depth": 6,
+                "distinct": 220,
+                "newStates": 49,
+                "firstWitness": 4,
+                "evaluations": 2395,
+                "ms": 169.45941300000004
+              },
+              {
+                "depth": 7,
+                "distinct": 256,
+                "newStates": 36,
+                "firstWitness": 4,
+                "evaluations": 3081,
+                "ms": 200.394863
+              },
+              {
+                "depth": 8,
+                "distinct": 277,
+                "newStates": 21,
+                "firstWitness": 4,
+                "evaluations": 3585,
+                "ms": 219.09224200000017
+              },
+              {
+                "depth": 9,
+                "distinct": 286,
+                "newStates": 9,
+                "firstWitness": 4,
+                "evaluations": 3879,
+                "ms": 226.9249359999999
+              },
+              {
+                "depth": 10,
+                "distinct": 288,
+                "newStates": 2,
+                "firstWitness": 4,
+                "evaluations": 4005,
+                "ms": 229.88603700000021
+              }
+            ]
+          },
+          {
+            "managers": 8,
+            "layers": [
+              {
+                "depth": 0,
+                "distinct": 1,
+                "newStates": 1,
+                "firstWitness": null,
+                "evaluations": 1,
+                "ms": 1.24273200000016
+              },
+              {
+                "depth": 1,
+                "distinct": 18,
+                "newStates": 17,
+                "firstWitness": null,
+                "evaluations": 35,
+                "ms": 11.84554799999978
+              },
+              {
+                "depth": 2,
+                "distinct": 154,
+                "newStates": 136,
+                "firstWitness": null,
+                "evaluations": 613,
+                "ms": 143.04425200000014
+              },
+              {
+                "depth": 3,
+                "distinct": 842,
+                "newStates": 688,
+                "firstWitness": null,
+                "evaluations": 5237,
+                "ms": 1507.190783
+              },
+              {
+                "depth": 4,
+                "distinct": 3342,
+                "newStates": 2500,
+                "firstWitness": null,
+                "evaluations": 28629,
+                "ms": 10494.286605
+              }
+            ]
+          }
+        ]
+      },
+      "systematic": {
+        "por": {
+          "status": "incomplete",
+          "distinct": 12301,
+          "atWindow": 4578,
+          "ms": 29907.989705,
+          "witness": true,
+          "prefixes": 48894,
+          "schedules": 35423,
+          "slept": 63240,
+          "stubbornPruned": 0,
+          "diamonds": 0,
+          "evaluations": 500000
+        },
+        "dpor": {
+          "status": "incomplete",
+          "distinct": 12079,
+          "atWindow": 4578,
+          "ms": 28387.766689999997,
+          "witness": true,
+          "prefixes": 47393,
+          "schedules": 34294,
+          "slept": 61241,
+          "stubbornPruned": 0,
+          "diamonds": 7117,
+          "evaluations": 500000
+        },
+        "exhaustive": {
+          "status": "incomplete",
+          "distinct": 3233,
+          "atWindow": 213,
+          "ms": 47423.145334,
+          "witness": true,
+          "prefixes": 124080,
+          "schedules": 109368,
+          "slept": 0,
+          "stubbornPruned": 0,
+          "diamonds": 0,
+          "evaluations": 500000
+        }
+      },
+      "random": [
+        {
+          "seed": "11400714819323198485",
+          "samplesAtWindow": 381,
+          "atWindow": 2630,
+          "samples": 384,
+          "distinct": 2642,
+          "witnessingTraces": 0,
+          "ms": 8067.492679000003
+        },
+        {
+          "seed": "4354685564936845354",
+          "samplesAtWindow": 383,
+          "atWindow": 2643,
+          "samples": 384,
+          "distinct": 2649,
+          "witnessingTraces": 0,
+          "ms": 8021.4402249999985
+        },
+        {
+          "seed": "15755400384260043839",
+          "samplesAtWindow": 388,
+          "atWindow": 2717,
+          "samples": 400,
+          "distinct": 2786,
+          "witnessingTraces": 0,
+          "ms": 8367.916809999995
+        },
+        {
+          "seed": "8709371129873690708",
+          "samplesAtWindow": 383,
+          "atWindow": 2705,
+          "samples": 384,
+          "distinct": 2715,
+          "witnessingTraces": 0,
+          "ms": 8039.448451000004
+        },
+        {
+          "seed": "1663341875487337577",
+          "samplesAtWindow": 391,
+          "atWindow": 2713,
+          "samples": 400,
+          "distinct": 2770,
+          "witnessingTraces": 0,
+          "ms": 8238.954346999992
+        }
+      ]
+    },
+    {
+      "case": "log-d12",
+      "config": {
+        "file": "quint/benchmarks/exploration/Models.qnt",
+        "main": "OrderedLog",
+        "invariant": "valid",
+        "goal": "logEntries == [2,2,2,2,2,2,2,2,2,2,2,2]",
+        "model": "log",
+        "depth": 12,
+        "maxWork": 2000000
+      },
+      "windowMs": 8000,
+      "reference": {
+        "method": "all ternary words through depth",
+        "total": 797161
+      },
+      "systematic": {
+        "dpor": {
+          "status": "ok",
+          "distinct": 797161,
+          "atWindow": 216159,
+          "ms": 28583.50141899998,
+          "witness": true,
+          "prefixes": 797161,
+          "schedules": 531441,
+          "slept": 0,
+          "stubbornPruned": 0,
+          "diamonds": 265719,
+          "evaluations": 1328599
+        },
+        "exhaustive": {
+          "status": "ok",
+          "distinct": 797161,
+          "atWindow": 260317,
+          "ms": 24660.34301100002,
+          "witness": true,
+          "prefixes": 797161,
+          "schedules": 531441,
+          "slept": 0,
+          "stubbornPruned": 0,
+          "diamonds": 0,
+          "evaluations": 797161
+        },
+        "por": {
+          "status": "ok",
+          "distinct": 797161,
+          "atWindow": 254111,
+          "ms": 24969.367981999996,
+          "witness": true,
+          "prefixes": 797161,
+          "schedules": 531441,
+          "slept": 0,
+          "stubbornPruned": 0,
+          "diamonds": 0,
+          "evaluations": 797161
+        }
+      },
+      "random": [
+        {
+          "seed": "11400714819323198485",
+          "samplesAtWindow": 28386,
+          "atWindow": 101154,
+          "samples": 28400,
+          "distinct": 101192,
+          "witnessingTraces": 0,
+          "ms": 8003.404564000026
+        },
+        {
+          "seed": "4354685564936845354",
+          "samplesAtWindow": 27647,
+          "atWindow": 99244,
+          "samples": 27648,
+          "distinct": 99245,
+          "witnessingTraces": 0,
+          "ms": 8000.229886999994
+        },
+        {
+          "seed": "15755400384260043839",
+          "samplesAtWindow": 28206,
+          "atWindow": 100736,
+          "samples": 28208,
+          "distinct": 100742,
+          "witnessingTraces": 0,
+          "ms": 8000.469922999968
+        },
+        {
+          "seed": "8709371129873690708",
+          "samplesAtWindow": 28264,
+          "atWindow": 100622,
+          "samples": 28272,
+          "distinct": 100648,
+          "witnessingTraces": 0,
+          "ms": 8006.025555
+        },
+        {
+          "seed": "1663341875487337577",
+          "samplesAtWindow": 28080,
+          "atWindow": 100312,
+          "samples": 28096,
+          "distinct": 100351,
+          "witnessingTraces": 0,
+          "ms": 8003.684154000017
+        }
+      ]
+    }
+  ]
+}

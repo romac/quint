@@ -56,7 +56,14 @@ export function builtinValue(name: string): EvalFunction {
     case 'Nat':
       return _ => right(rv.mkInfSet('Nat'))
     case 'q::lastTrace':
-      return ctx => right(rv.mkList(ctx.trace.get()))
+      return ctx =>
+        ctx.choices
+          ? left({
+              code: 'QNT501',
+              message:
+                'Systematic exploration requires state predicates. Store history in a model variable to use q::lastTrace.',
+            })
+          : right(rv.mkList(ctx.trace.get()))
     default:
       return _ => left({ code: 'QNT404', message: `Unknown builtin ${name}` })
   }
@@ -102,7 +109,8 @@ export const lazyOps = [
  * @returns A function that evaluates the operator with the given context and arguments.
  */
 export function lazyBuiltinLambda(
-  op: string
+  op: string,
+  site: bigint = 0n
 ): (ctx: Context, args: EvalFunction[]) => Either<QuintError, RuntimeValue> {
   switch (op) {
     case 'and':
@@ -144,6 +152,24 @@ export function lazyBuiltinLambda(
       // Returns false if no enabled actions are found.
       const app: QuintApp = { id: 0n, kind: 'app', opcode: 'actionAny', args: [] }
       return (ctx, args) => {
+        if (ctx.choices && ctx.readOnly) {
+          for (const arg of args) {
+            ctx.chargeChoice?.()
+            const result = arg(ctx)
+            if (result.isLeft() || result.value.toBool()) return result
+          }
+          return right(rv.mkBool(false))
+        }
+        if (ctx.choices) {
+          const selected = ctx.choices.select(site, rv.mkInterval(0, args.length - 1))
+          if (selected === undefined) return right(rv.mkBool(false))
+          ctx.varStorage.actionTaken = undefined
+          ctx.varStorage.nondetPicks.forEach((_, key) => ctx.varStorage.nondetPicks.set(key, undefined))
+          const snapshot = ctx.varStorage.snapshot()
+          const result = args[Number(selected.toInt())](ctx)
+          if (isFalse(result)) ctx.varStorage.recoverSnapshot(snapshot)
+          return result
+        }
         const nextVarsSnapshot = ctx.varStorage.snapshot()
 
         // Create array of indices and shuffle them

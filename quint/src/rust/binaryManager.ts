@@ -36,13 +36,25 @@ interface GitHubAsset {
  * @returns {string} The path to the Quint evaluator executable.
  * @throws Will throw an error if the evaluator is not found or cannot be downloaded.
  */
-export async function getRustEvaluatorPath(version: string = QUINT_EVALUATOR_VERSION): Promise<string> {
+export async function getRustEvaluatorPath(
+  version: string = QUINT_EVALUATOR_VERSION,
+  fromCheckout = false
+): Promise<string> {
+  if (process.env.QUINT_RUST_EVALUATOR) return path.resolve(process.env.QUINT_RUST_EVALUATOR)
   // Determine platform and architecture
   const platform = os.platform()
   const arch = os.arch()
 
   // Map platform and architecture to asset name
   let { assetName, executable } = inferAssetAndExecutableNames(platform, arch)
+
+  // A source checkout can use a native command before it ships in a release.
+  if (fromCheckout) {
+    const root = path.resolve(__dirname, '../..')
+    const packageDir = path.basename(root) === 'dist' ? path.dirname(root) : root
+    const local = path.resolve(packageDir, '../evaluator/target/release', executable)
+    if (await exists(local)) return local
+  }
 
   // Check if the evaluator is already downloaded
   const evaluatorDir = rustEvaluatorDir(version)

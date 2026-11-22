@@ -1800,3 +1800,147 @@ function isSingletonEmptyMap(value: RuntimeValue): boolean {
   }
   return false
 }
+
+/** Enumerate a finite oneOf domain without materializing its powerset or a
+ * Cartesian product. In particular the first choice is available even when
+ * the full cardinality would exceed the largest representable bigint. */
+export function finiteChoices(domain: RuntimeValue): Iterable<RuntimeValue> {
+  if (!isRuntimeSet(domain)) throw new Error('Expected a set as a oneOf domain')
+  if (isEmptySet(domain)) return []
+  if (isEmptyDomainMapSet(domain)) return [rv.mkMap([])]
+  if (domain instanceof RuntimeValueInfSet) throw new Error('Systematic exploration needs a finite oneOf domain')
+  if (domain instanceof RuntimeValueCrossProd) {
+    const factors = domain.sets.map(finiteChoices)
+    return {
+      *[Symbol.iterator]() {
+        for (const values of product(factors)) yield rv.mkTuple(values)
+      },
+    }
+  }
+  if (domain instanceof RuntimeValueMapSet) {
+    const keyDomain = finiteChoices(domain.domainSet)
+    const range = finiteChoices(domain.rangeSet)
+    return {
+      *[Symbol.iterator]() {
+        const keys = [...keyDomain]
+        for (const values of product(keys.map(() => range))) yield rv.mkMap(keys.map((k, i) => [k, values[i]]))
+      },
+    }
+  }
+  if (domain instanceof RuntimeValuePowerset) {
+    const base = finiteChoices(domain.baseSet)
+    return {
+      *[Symbol.iterator]() {
+        yield rv.mkSet([])
+        const seen: RuntimeValue[] = []
+        for (const element of base) {
+          const end = 1n << BigInt(seen.length)
+          for (let mask = 0n; mask < end; mask++) {
+            const members = [element]
+            for (let bits = mask, i = 0; bits > 0n; bits >>= 1n, i++) {
+              if (bits & 1n) members.push(seen[i])
+            }
+            yield rv.mkSet(members)
+          }
+          seen.push(element)
+        }
+      },
+    }
+  }
+  return domain
+}
+
+/** Check a replay pick against the exact constructors produced by finiteChoices.
+ * General Quint membership is called on typechecked operands, while a schedule
+ * may come from a file or from a different branch of an instantiated operator. */
+export function containsChoice(domain: RuntimeValue, value: RuntimeValue): boolean {
+  if (domain instanceof RuntimeValueCrossProd) {
+    return (
+      value instanceof RuntimeValueTupleOrList &&
+      value.kind === 'Tup' &&
+      value.list.size === domain.sets.length &&
+      value.list.every((member, i) => containsChoice(domain.sets[i], member))
+    )
+  }
+  if (domain instanceof RuntimeValuePowerset) {
+    if (!isRuntimeSet(value) || value instanceof RuntimeValueInfSet) return false
+    for (const member of value) if (!containsChoice(domain.baseSet, member)) return false
+    return true
+  }
+  if (domain instanceof RuntimeValueMapSet) {
+    return (
+      value instanceof RuntimeValueMap &&
+      domain.domainSet.equals(rv.mkSet(value.map.keys())) &&
+      value.map.every(member => containsChoice(domain.rangeSet, member))
+    )
+  }
+  return domain.contains(value)
+}
+
+function* product(factors: Iterable<RuntimeValue>[]): Generator<RuntimeValue[]> {
+  if (!factors.length) {
+    yield []
+    return
+  }
+  const iterators = [factors[0][Symbol.iterator]()]
+  const values: RuntimeValue[] = []
+  while (iterators.length) {
+    const i = iterators.length - 1
+    const next = iterators[i].next()
+    if (next.done) iterators.pop()
+    else {
+      values[i] = next.value
+      if (i + 1 === factors.length) yield [...values]
+      else iterators.push(factors[i + 1][Symbol.iterator]())
+    }
+  }
+}
+
+/** Exact IDs for model-state components. Composite keys contain only child IDs,
+ * so sharing in immutable model values also saves work when hashing a new state.
+ * Set and map keys are independent of representation and enumeration order. */
+export class StateValueInterner {
+  private readonly keys = new Map<string, number>()
+  private readonly identities = new WeakMap<RuntimeValue, number>()
+
+  private intern(key: string): number {
+    let id = this.keys.get(key)
+    if (id === undefined) {
+      id = this.keys.size + 1 // zero is reserved for an unset register
+      this.keys.set(key, id)
+    }
+    return id
+  }
+
+  id(value: RuntimeValue): number {
+    let id = this.identities.get(value)
+    if (id === undefined) {
+      id = this.intern(this.key(value))
+      this.identities.set(value, id)
+    }
+    return id
+  }
+
+  private key(value: RuntimeValue): string {
+    if (value instanceof RuntimeValueBool) return String(value.value)
+    if (value instanceof RuntimeValueInt) return 'i' + value.value
+    if (value instanceof RuntimeValueStr) return 's' + value.value
+    if (value instanceof RuntimeValueInfSet) return value.kind
+    if (value instanceof RuntimeValueVariant) return 'v' + this.intern('s' + value.label) + ',' + this.id(value.value)
+    if (value instanceof RuntimeValueTupleOrList)
+      return value.kind + Array.from(value.list, child => this.id(child)).join(',')
+    if (value instanceof RuntimeValueRecord || value instanceof RuntimeValueMap) {
+      const pairs = Array.from(value.map as Iterable<[string | RuntimeValue, RuntimeValue]>, ([k, v]) => {
+        const key = typeof k === 'string' ? this.intern('s' + k) : this.id(k)
+        return [key, this.id(v)]
+      })
+      pairs.sort(([a], [b]) => a - b)
+      return (value instanceof RuntimeValueRecord ? 'r' : 'm') + pairs.join(',')
+    }
+    if (isRuntimeSet(value)) {
+      const members = new globalThis.Set(Array.from(finiteChoices(value), child => this.id(child)))
+      return 'S' + [...members].sort((a, b) => a - b).join(',')
+    }
+    throw new Error('BFS requires data values in model state')
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "environment": {
+    "runtimeTree": "61fcaa24f8f89f4ccf8790df7c2aec5fdbc39959",
+    "node": "v24.22.3",
+    "v8": "13.6.233.17-node.63",
+    "os": "Linux",
+    "release": "6.18.57",
+    "arch": "x64",
+    "cpu": "INTEL(R) XEON(R) PLATINUM 8573C"
+  },
+  "model": "tm7-d8",
+  "samples": 1500,
+  "threads": 1,
+  "trials": [
+    {
+      "seed": "11400714819323198485",
+      "cliMs": {
+        "typescript": 11293.578149,
+        "rust": 4447.134450999998
+      },
+      "distinct": {
+        "typescript": 3319,
+        "rust": 3365
+      }
+    },
+    {
+      "seed": "4354685564936845354",
+      "cliMs": {
+        "rust": 3585.6601079999964,
+        "typescript": 10174.390347
+      },
+      "distinct": {
+        "typescript": 3310,
+        "rust": 3366
+      }
+    },
+    {
+      "seed": "15755400384260043839",
+      "cliMs": {
+        "typescript": 10699.919106999994,
+        "rust": 2975.793876999989
+      },
+      "distinct": {
+        "typescript": 3301,
+        "rust": 3385
+      }
+    }
+  ]
+}

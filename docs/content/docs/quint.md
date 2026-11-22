@@ -229,6 +229,11 @@ Options:
   --help         Show help                                             [boolean]
   --version      Show version number                                   [boolean]
   --out          output file (suppresses all console output)            [string]
+  --strategy     random, bfs, exhaustive, por or dpor (default: random)
+  --max-work     action evaluation budget for systematic search         [number]
+  --max-states   distinct-state budget for bfs                        [number]
+  --out-schedule save explicit choices for a systematic trace           [string]
+  --replay       execute a saved choice schedule                        [string]
   --main         name of the main module (by default, computed from filename)
                                                                         [string]
   --out-itf      output the trace in the Informal Trace Format to file, e.g.,
@@ -257,12 +262,16 @@ Options:
                                                            [number] [default: 2]
   --mbt          (experimental) whether to produce metadata to be used by
                  model-based testing                  [boolean] [default: false]
-  --backend      the backend to use for simulation
-                [string] [choices: "typescript", "rust"] [default: "typescript"]
+  --backend      evaluation backend (random defaults to rust, systematic
+                 exploration defaults to typescript)                           [string]
 ```
 
- - If there are no critical errors (e.g., in parsing, typechecking, etc.), the
- simulator tries to find the shortest trace that violates the invariant.  If it
+Systematic strategies check bounded invariant and witness reachability. The
+simulator guide includes a runnable Tendermint example and the schedule format.
+[Systematic exploration](./simulator#systematic-exploration)
+
+ - With random sampling, if parsing and typechecking succeed, the simulator
+ tries to find the shortest sampled trace that violates the invariant.  If it
  finds one, it prints the trace on the standard output.  If it does not find a
  violating trace, it prints the longest sample trace that the simulator has
  found during the execution. When the parameter `--out` is supplied, the trace

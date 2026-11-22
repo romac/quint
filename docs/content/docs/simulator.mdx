@@ -6,7 +6,145 @@ import { Callout } from 'nextra/components'
   This page is under construction.
 </Callout>
 
-Quint's simulator generates samples of executions valid for the model and check invariants at each state of those executions. It is not a verification tool, but it **can** find violations - sometimes faster than the model checker. Given a model and properties (invariants only, temporal properties are not supported), the simulator will output one of the following:
+By default, Quint samples executions and checks invariants at each state. It is not a verification tool, but it **can** find violations - sometimes faster than the model checker.
+
+## Systematic exploration
+
+Use `quint run --strategy` to check a finite model through a given number of steps.
+The depth starts at zero after `init`. All four strategies enumerate choices in both
+`init` and `step` on the TypeScript and Rust evaluators. Random simulation remains
+the default. A systematic command defaults to TypeScript. Select the native
+evaluator with `--backend=rust`. Both evaluators support arbitrary-precision integer
+picks in explicit finite sets. The Rust evaluator requires the endpoints of
+`a.to(b)` intervals to fit in signed 64-bit integers.
+
+| Strategy | Exploration |
+| --- | --- |
+| `bfs` | Breadth-first search with a visited-state cache. Checks each distinct model state once and finds a shortest invariant violation. |
+| `exhaustive` | Depth-first search over every enabled concrete step. Use it as a reference on small instances. |
+| `por` | For supported guarded commands, compute a stubborn set from the invariants and witnesses. In general models, use sleep sets and concrete read and update locations. |
+| `dpor` | Use event-based dynamic sleep sets. When accesses overlap, replay the two events in both orders and compare the resulting states. |
+
+An event records the source site and branch index of each `any` and the site and
+actual value of each `oneOf` pick. Reordering uses the same values even when a
+set changes its iteration order. An event that becomes disabled or produces a
+different state wakes up. Dependencies include reads in guards and choice domains.
+The evaluator recognizes frame assignments, accesses to different map keys, and
+commutative set insertions, including `m.setBy(k, old => old.union(delta))` when
+`delta` is independent of `old`.
+
+The stubborn-set calculation handles a top-level `any` of deterministic scalar
+guarded commands with complete assignments. Every path to a new observation must
+include a command that can change it. The calculation starts with these commands,
+includes potentially failing expressions, and closes the set under conflicts for
+enabled commands and possible enablers for disabled commands. Moving the first
+such command earlier preserves the length of a path to the observation. Sleep
+sets retain earlier representatives of commuting prefixes of the same length.
+This preserves transient state violations and the depth bound.
+
+### State caching for bounded safety
+
+Use `bfs` when the reachable states through the bound fit in memory. Two
+schedules that converge on the same values have the same possible futures
+for a history-independent model. The first visit has the shortest distance
+from any enabled initial state. BFS checks invariants and witnesses immediately,
+including at depth zero and at the final depth. It stops early when no new
+states are reachable. Model variables distinguish states, including whether
+a variable is unset. The incoming action name and nondeterministic picks
+are trace metadata and do not distinguish states.
+
+`--max-states N` caps the number of distinct model states retained by BFS.
+Duplicate transitions consume work but do not use another state slot. A
+zero budget stops on the first enabled initial state. If the cache fits
+exactly, the search can still finish. The cache stores state identities and
+a predecessor edge for each discovery, so a wide frontier or a large state
+value can make even a shallow search expensive.
+
+The JSON report from `--out` includes the following fields in `exploration.bfs`.
+
+| Field | Meaning |
+| --- | --- |
+| `distinctStates` | Distinct model states admitted to the cache. |
+| `duplicates` | Enabled initial choices or transitions leading to an already admitted state. |
+| `expandedStates` | States for which all outgoing choices were enumerated below the depth bound. |
+| `peakFrontier` | Largest number of states queued and awaiting expansion. |
+| `completedDepth` | Deepest nonempty layer fully discovered and checked. It is `null` when the initial layer was interrupted. |
+| `witnessDepths` | Shortest observed depth for each witness, in CLI order. An unseen witness has depth `null`. |
+
+If a state or work budget interrupts exploration, the CLI exits with status 1,
+reports `incomplete`, and writes `limit` as `max-states` or `max-work`.
+A witnessed predicate is positive evidence even on a partial run. An unseen
+witness may be in the unexplored region. POR and DPOR use depth-first search
+and can reach a deep witness before BFS finishes the shallower layers. They
+also avoid retaining a global cache.
+
+From a checkout of this fork, build the native evaluator once. The CLI finds
+the release binary in the checkout. Set `QUINT_RUST_EVALUATOR` to use a binary
+built in another location.
+
+```sh
+cargo build --release --locked --manifest-path evaluator/Cargo.toml
+quint run examples/cosmos/tendermint/TendermintPOR.qnt \
+  --backend=rust --strategy=bfs --init=Init --step=Next --invariant=Agreement \
+  --witnesses=reachedQuorum --max-steps=4 --max-states=10000
+```
+
+### Tendermint example
+
+From the repository root, run the following commands.
+
+```sh
+quint run examples/cosmos/tendermint/TendermintPOR.qnt \
+  --strategy=dpor --init=Init --step=quorumStep --invariant=Agreement \
+  --witnesses=reachedQuorum --max-steps=4
+
+quint run examples/cosmos/tendermint/TendermintPOR.qnt \
+  --strategy=por --init=Init --step=timeoutStep --invariant=phaseOrder \
+  --max-steps=3 --out-schedule=timeout.json --out-itf=timeout.itf.json
+
+quint run examples/cosmos/tendermint/TendermintPOR.qnt \
+  --replay=timeout.json --init=Init --step=timeoutStep --invariant=phaseOrder
+```
+
+With `timeoutStep`, `Agreement` and a depth of three, exhaustive search visits
+16 prefixes and completes six schedules. Both reduced searches visit eight
+prefixes and complete one schedule. The quorum witness first becomes reachable
+at depth four with `quorumStep`. The separate `phaseOrder` invariant detects an
+intermediate state after just one timeout.
+
+To include all protocol actions, run the same four-validator instance with
+`--step=Next --init=Init --invariant=Agreement --witnesses=reachedQuorum --max-steps=4`.
+All three strategies reach the quorum witness and satisfy Agreement at this bound.
+
+| Strategy | Visited prefixes | Completed schedules | Action evaluations |
+| --- | ---: | ---: | ---: |
+| `exhaustive` | 312 | 228 | 5,009 |
+| `por` | 234 | 164 | 4,105 |
+| `dpor` | 181 | 117 | 3,999 |
+
+### Bounds, output and replay
+
+An `ok` result covers the requested state invariants through the specified
+depth for finite choice domains and atomic actions. A witness reports whether
+its predicate was reached during the search. A violation stops the search and
+retains the failing prefix. A completed depth-first search retains a longest visited prefix.
+BFS retains a shortest path to the first witness found, or a deepest example
+if there were no hits. BFS counterexamples are shortest in number of steps.
+`--out-itf` writes the states and `--out-schedule` writes the choices that reproduce
+them on either evaluator against the same model. Pass the same initializer, step and properties to
+`--replay`. The saved schedule determines replay depth. Replay reports a diverging
+choice site or a disabled step.
+
+`--max-work N` limits action evaluations, including speculative dependency
+checks and alternatives evaluated inside boolean guards. Exhausting that budget
+returns `incomplete` with a nonzero exit status. `--out` includes the status,
+search counters and witness results in JSON. Infinite choice domains, use of
+`q::lastTrace`, and run combinators that shift the state inside an action produce
+a diagnostic. Assignments belong in action position. Guards, state predicates
+and ordinary operator arguments must be read-only. Express history-dependent
+safety properties with explicit state variables. Temporal liveness and fairness use the model-checking backends.
+
+The default random simulator reports the following outcomes.
 
 ## Output: OK
 OK means: it could not find a violation in the explored executions. **There might still be an issue**.
@@ -50,7 +188,7 @@ Violation means: there is for sure is a violation, and it will provide a counter
 error: Invariant violated
 ```
 
-While a model checker's counter-example is always minimal, the simulator one is not - there might exist another counter-example that is smaller.
+Random simulation can return a longer counterexample than necessary. Use `--strategy=bfs` to find a shortest counterexample to a state invariant.
 
 ## When to use it
 

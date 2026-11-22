@@ -14,7 +14,7 @@
 
 import { Either, right } from '@sweet-monads/either'
 import { EvalFunction } from './builder'
-import { RuntimeValue, rv } from './runtimeValue'
+import { RuntimeValue, finiteChoices, rv } from './runtimeValue'
 import { isDeepStrictEqual as isEqual } from 'node:util'
 import { QuintError } from '../../quintError'
 import { CachedValue } from './Context'
@@ -43,10 +43,33 @@ export function evalNondet(
   name: string,
   cache: CachedValue,
   setEval: EvalFunction,
-  bodyEval: EvalFunction
+  bodyEval: EvalFunction,
+  site: bigint = 0n
 ): EvalFunction {
   return ctx =>
     setEval(ctx).chain(set => {
+      if (ctx.choices && ctx.readOnly) {
+        try {
+          for (const value of finiteChoices(set)) {
+            ctx.chargeChoice?.()
+            cache.value = right(value)
+            const result = bodyEval(ctx)
+            if (!isFalse(result)) return result
+          }
+          return right(rv.mkBool(false))
+        } finally {
+          cache.value = undefined
+        }
+      }
+      if (ctx.choices) {
+        const picked = ctx.choices.select(site, set)
+        if (picked === undefined) return right(rv.mkBool(false))
+        cache.value = right(picked)
+        const result = bodyEval(ctx)
+        ctx.varStorage.nondetPicks.set(name, picked)
+        cache.value = undefined
+        return result
+      }
       if (set.cardinality().isRight() && set.cardinality().unwrap() === 0n) {
         // The whole let expression is false if there are no elements to be picked.
         return right(rv.mkBool(false))
