@@ -28,12 +28,28 @@ import { LookupDefinition, LookupTable } from '../../names/base'
 import { NamedRegister, VarStorage, initialRegisterValue } from './VarStorage'
 import { List } from 'immutable'
 import { evalNondet } from './nondet'
+import { WorkLimit } from '../exploration/choices'
+import { trackedBuiltin } from '../exploration/access'
 
 /**
  * The type returned by the builder in its methods, which can be called to get the
  * evaluation result under a given context.
  */
 export type EvalFunction = (ctx: Context) => Either<QuintError, RuntimeValue>
+
+// In a value context a guarded choice denotes an existential predicate.
+// Only choices in positive action positions are scheduling alternatives.
+function asValue(evalExpr: EvalFunction): EvalFunction {
+  return ctx => {
+    const previous = ctx.readOnly
+    ctx.readOnly = true
+    try {
+      return evalExpr(ctx)
+    } finally {
+      ctx.readOnly = previous
+    }
+  }
+}
 
 /**
  * A builder to build arrow functions used to evaluate Quint expressions.
@@ -58,7 +74,7 @@ export class Builder {
    * @param table - The lookup table containing definitions.
    * @param storeMetadata - A flag indicating whether to store metadata (`actionTaken` and `nondetPicks`).
    */
-  constructor(table: LookupTable, storeMetadata: boolean) {
+  constructor(table: LookupTable, storeMetadata: boolean, readonly exploring = false) {
     this.table = table
     this.varStorage = new VarStorage(storeMetadata, this.initialNondetPicks)
   }
@@ -157,13 +173,22 @@ export function buildExpr(builder: Builder, expr: QuintEx): EvalFunction {
   if (builder.memo.has(expr.id)) {
     return builder.memo.get(expr.id)!
   }
-  const exprEval = buildExprCore(builder, expr)
+  let exprEval = buildExprCore(builder, expr)
+  if (
+    builder.exploring &&
+    expr.kind === 'app' &&
+    !builder.table.has(expr.id) &&
+    !['assign', 'actionAny', 'actionAll', 'ite', 'matchVariant', 'then', 'reps', 'expect'].includes(expr.opcode)
+  ) {
+    exprEval = asValue(exprEval)
+  }
   const wrappedEval: EvalFunction = ctx => {
     try {
       // This is where we add the reference to the error, if it is not already there.
       // This way, we don't need to worry about references anywhere else :)
       return exprEval(ctx).mapLeft(err => (err.reference === undefined ? { ...err, reference: expr.id } : err))
     } catch (error) {
+      if (error instanceof WorkLimit) throw error
       const message = error instanceof Error ? error.message : 'unknown error'
       return left({ code: 'QNT501', message: message, reference: expr.id })
     }
@@ -334,6 +359,11 @@ function buildDefCore(builder: Builder, def: LookupDefinition): EvalFunction {
       // Every variable has a single register, and we just change this register's value at each state
       // So, a reference to a variable simply evaluates to the value of the register.
       const register = builder.getVar(def)
+      if (builder.exploring)
+        return ctx => {
+          ctx.accesses?.reads.push({ name: register.name })
+          return register.value
+        }
       return _ => {
         return register.value
       }
@@ -364,7 +394,11 @@ function buildDefWithMemo(builder: Builder, def: LookupDefinition): EvalFunction
     return builder.memo.get(def.id)!
   }
 
-  const defEval = buildDefCore(builder, def)
+  const bodyEval = buildDefCore(builder, def)
+  const defEval =
+    builder.exploring && def.kind === 'def' && (def.qualifier === 'pureval' || def.qualifier === 'val')
+      ? asValue(bodyEval)
+      : bodyEval
 
   // For top-level value definitions, we can cache the resulting value, as long as we are careful with state changes.
   const statefulCachingCondition =
@@ -435,11 +469,26 @@ function buildExprCore(builder: Builder, expr: QuintEx): EvalFunction {
         // and that changed everything
         const varDef = builder.table.get(expr.args[0].id)!
         // The RHS must be built in the caller's context, not the target variable's
-        const exprEval = buildExpr(builder, expr.args[1])
+        const rhsEval = buildExpr(builder, expr.args[1])
+        const exprEval = builder.exploring ? asValue(rhsEval) : rhsEval
         return buildUnderDefContext(builder, varDef, () => {
           builder.discoverVar(varDef.id, varDef.name)
           const register = builder.getNextVar(varDef.id)
 
+          if (builder.exploring) {
+            const rhs = expr.args[1]
+            const frameCandidate = rhs.kind !== 'name' || builder.table.get(rhs.id)?.kind === 'var'
+            return ctx => {
+              if (ctx.readOnly) return left({ code: 'QNT501', message: 'A state predicate cannot assign variables' })
+              const firstRead = ctx.accesses?.reads.length ?? 0
+              return exprEval(ctx).map(value => {
+                if (frameCandidate) ctx.accesses?.assignment(register.name, rhs, firstRead, value)
+                else ctx.accesses?.writes.push({ name: register.name })
+                register.value = right(value)
+                return rv.mkBool(true)
+              })
+            }
+          }
           return ctx => {
             return exprEval(ctx).map(value => {
               register.value = right(value)
@@ -450,10 +499,16 @@ function buildExprCore(builder: Builder, expr: QuintEx): EvalFunction {
       }
 
       const args = expr.args.map(arg => buildExpr(builder, arg))
+      if (builder.exploring && (expr.opcode === 'ite' || expr.opcode === 'matchVariant')) args[0] = asValue(args[0])
+      if (builder.exploring && builder.table.has(expr.id)) {
+        // User operators take eager arguments. An action consumed as ordinary
+        // boolean data has to be resolved before the operator examines it.
+        for (let i = 0; i < args.length; i++) args[i] = asValue(args[i])
+      }
 
       // If the operator is a lazy operator, we can't evaluate the arguments before evaluating application
       if (lazyOps.includes(expr.opcode)) {
-        const op = lazyBuiltinLambda(expr.opcode)
+        const op = lazyBuiltinLambda(expr.opcode, expr.id)
         return ctx =>
           op(ctx, args).mapLeft(err => {
             // Improve reference of `then`-related errors
@@ -473,7 +528,14 @@ function buildExprCore(builder: Builder, expr: QuintEx): EvalFunction {
 
       const operatorFunction = buildApp(builder, expr)
       const userDefined = builder.table.has(expr.id)
+      const trackBase =
+        builder.exploring &&
+        !userDefined &&
+        expr.args[0]?.kind === 'name' &&
+        builder.table.get(expr.args[0].id)?.kind === 'var' &&
+        ['get', 'field', 'contains', 'set', 'setBy', 'put', 'union'].includes(expr.opcode)
 
+      if (trackBase) return trackedBuiltin(expr, builder.table, args, operatorFunction)
       return ctx => {
         if (userDefined) {
           ctx.recorder.onUserOperatorCall(expr)
@@ -518,7 +580,7 @@ function buildExprCore(builder: Builder, expr: QuintEx): EvalFunction {
         const setEval = buildExpr(builder, expr.opdef.expr.args[0])
         const bodyEval = buildExpr(builder, expr.expr)
 
-        return evalNondet(expr.opdef.name, cache, setEval, bodyEval)
+        return evalNondet(expr.opdef.name, cache, setEval, bodyEval, expr.opdef.id)
       }
 
       // First, we create a cached value (a register with optional value) for the definition in this let expression

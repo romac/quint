@@ -18,6 +18,8 @@ import { RuntimeValue } from './runtimeValue'
 import { TraceRecorder } from '../trace'
 import { VarStorage } from './VarStorage'
 import { Trace } from './trace'
+import type { Accesses } from '../exploration/access'
+import type { ChoiceSource } from '../exploration/choices'
 
 /**
  * A pointer to a value, so we can use the same reference in multiple places, and just update the value.
@@ -40,6 +42,12 @@ export interface CachedValue {
 }
 
 export class Context {
+  /** Set by the systematic explorer while evaluating a single transition. */
+  public choices?: ChoiceSource
+  public accesses?: Accesses
+  public readOnly = false
+  public chargeChoice?: () => void
+
   /**
    * Function to generate a random bigint up to a specified maximum value.
    */
@@ -77,6 +85,10 @@ export class Context {
    * Shifts the variables in storage and extends the trace with the current variable state.
    */
   shift() {
+    if (this.choices)
+      throw new Error(
+        'Systematic exploration requires an atomic init and step. A run combinator advanced the state inside an action.'
+      )
     this.varStorage.shiftVars()
     this.trace.extend(this.varStorage.asRecord())
     this.varStorage.clearMetadata()
