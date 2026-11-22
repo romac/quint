@@ -114,7 +114,7 @@ function search(c, spec, strategy, onState, status = 'ok') {
   return r
 }
 
-function random(c, spec, seed, samples, onTrace) {
+function randomSession(c, spec, seed, onTrace) {
   const rng = newRng(seed)
   const recorder = newTraceRecorder(0, rng)
   if (onTrace) {
@@ -125,9 +125,15 @@ function random(c, spec, seed, samples, onTrace) {
     }
   }
   const evaluator = new Evaluator(spec.table, recorder, rng)
-  const r = evaluator.simulate(spec.init, spec.step, spec.invariants[0], spec.witnesses, samples, c.depth, 1)
-  assert.ok(r.status === 'ok' || r.status === 'violation', r.errors[0]?.message)
-  return r
+  return samples => {
+    const r = evaluator.simulate(spec.init, spec.step, spec.invariants[0], spec.witnesses, samples, c.depth, 1)
+    assert.ok(r.status === 'ok' || r.status === 'violation', r.errors[0]?.message)
+    return r
+  }
+}
+
+function random(c, spec, seed, samples, onTrace) {
+  return randomSession(c, spec, seed, onTrace)(samples)
 }
 
 function stateCollector() {
@@ -271,6 +277,27 @@ async function transientProbe() {
   }
 }
 
+// Rust ranks exported traces by quality. Order them by their starting RNG
+// counter, then overlap one trace to resume a single-worker campaign exactly.
+async function forEachRustTrace(wrapper, input, file, depth, seed, cap, onTrace) {
+  let start = seed
+  let samples = 0
+  while (samples < cap) {
+    const take = Math.min(160, cap - samples)
+    const requested = take + Number(samples + take < cap)
+    const r = await wrapper.simulate(input, file, requested, depth, requested, 1, start, false)
+    assert.equal(r.status, 'ok', r.errors[0]?.message)
+    assert.equal(r.samples, requested)
+    assert.equal(r.bestTraces.length, requested)
+    const ordered = r.bestTraces.sort((a, b) => (a.seed < b.seed ? -1 : a.seed > b.seed ? 1 : 0))
+    assert.equal(ordered[0].seed, start)
+    assert.ok(ordered.every((t, j) => !j || t.seed > ordered[j - 1].seed))
+    for (const trace of ordered.slice(0, take)) onTrace(trace)
+    samples += take
+    if (requested > take) start = ordered[take].seed
+  }
+}
+
 // CLI wall times include startup, the front end and Rust process transport.
 // Coverage is collected separately with all traces requested from a single Rust worker.
 async function rustComparison() {
@@ -346,26 +373,11 @@ async function rustComparison() {
   for (const [index, seed] of seeds.entries()) {
     const count = stateCollector()
     const coverage = {}
-    let start = seed
     let samples = 0
-    // Rust returns traces ranked by quality. Recover their order from each
-    // trace's starting RNG counter. Replay one overlapping trace between
-    // batches to continue the original campaign with bounded export memory.
-    while (samples < cap) {
-      const take = Math.min(160, cap - samples)
-      const requested = take + Number(samples + take < cap)
-      const r = await wrapper.simulate(input, file, requested, c.depth, requested, 1, start, false)
-      assert.equal(r.status, 'ok', r.errors[0]?.message)
-      assert.equal(r.bestTraces.length, requested)
-      const ordered = r.bestTraces.sort((a, b) => (a.seed < b.seed ? -1 : a.seed > b.seed ? 1 : 0))
-      assert.equal(ordered[0].seed, start)
-      assert.ok(ordered.every((t, j) => !j || t.seed > ordered[j - 1].seed))
-      for (const trace of ordered.slice(0, take)) {
-        for (const state of trace.states) count.add(rv.fromQuintEx(state))
-        if (cutoffs.has(++samples)) coverage[samples] = count.states.size
-      }
-      if (requested > take) start = ordered[take].seed
-    }
+    await forEachRustTrace(wrapper, input, file, c.depth, seed, cap, trace => {
+      for (const state of trace.states) count.add(rv.fromQuintEx(state))
+      if (cutoffs.has(++samples)) coverage[samples] = count.states.size
+    })
     assert.ok(count.states.isSubset(seen.states))
     assert.equal(coverage[fixedSamples], trials[index].states)
     trials[index].coverage = coverage
@@ -432,7 +444,11 @@ async function main() {
   checkpoint()
   if (!output) console.log(JSON.stringify(results, null, 2))
 }
-main().catch(err => {
-  console.error(err)
-  process.exitCode = 1
-})
+// Shared by the larger-state-space experiment.
+module.exports = { forEachRustTrace, loadModel, randomSession, root, seeds }
+if (require.main === module) {
+  main().catch(err => {
+    console.error(err)
+    process.exitCode = 1
+  })
+}
