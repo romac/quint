@@ -229,8 +229,9 @@ Options:
   --help         Show help                                             [boolean]
   --version      Show version number                                   [boolean]
   --out          output file (suppresses all console output)            [string]
-  --strategy     random, exhaustive, por or dpor (default: random)
+  --strategy     random, bfs, exhaustive, por or dpor (default: random)
   --max-work     action evaluation budget for systematic search         [number]
+  --max-states   distinct-state budget for bfs                        [number]
   --out-schedule save explicit choices for a systematic trace           [string]
   --replay       execute a saved choice schedule                        [string]
   --main         name of the main module (by default, computed from filename)
@@ -262,7 +263,7 @@ Options:
   --mbt          (experimental) whether to produce metadata to be used by
                  model-based testing                  [boolean] [default: false]
   --backend      evaluation backend (random defaults to rust, systematic
-                 exploration uses typescript)                           [string]
+                 exploration defaults to typescript)                           [string]
 ```
 
 Systematic strategies check bounded invariant and witness reachability. The

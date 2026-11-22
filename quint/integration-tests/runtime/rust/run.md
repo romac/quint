@@ -696,3 +696,43 @@ quint run --backend=rust --verbosity=3 --seed=0xf3358ea77be2efe2 \
 ```
 [DEBUG] Stop me "x"
 ```
+
+### Bounded exploration and schedule interchange
+
+<!-- !test in bounded exploration -->
+```sh
+set -eu
+run_dir=$(mktemp -d)
+trap 'rm -rf "$run_dir"' EXIT
+model=../examples/cosmos/tendermint/TendermintPOR.qnt
+qrun() {
+  quint run "$model" --init=Init --out="$run_dir/report.json" "$@"
+}
+fails() {
+  local code=0
+  "$@" || code=$?
+  test "$code" -eq 1
+}
+for backend in typescript rust; do
+  qrun --strategy=bfs --backend="$backend" --step=Next --invariant=Agreement \
+    --witnesses=reachedQuorum --max-steps=4
+  jq -c '[.status, .exploration.bfs.distinctStates, .exploration.bfs.witnessDepths]' "$run_dir/report.json"
+  fails qrun --strategy=bfs --backend="$backend" --step=Next --max-states=1
+  jq -c '[.status, .limit, .exploration.bfs.completedDepth]' "$run_dir/report.json"
+done
+fails qrun --backend=rust --strategy=bfs --mbt --step=timeoutStep --invariant=phaseOrder \
+  --max-steps=3 --out-schedule="$run_dir/choices.json" --out-itf="$run_dir/failure.json"
+fails qrun --backend=typescript --replay="$run_dir/choices.json" --mbt \
+  --step=timeoutStep --invariant=phaseOrder --out-itf="$run_dir/replay.json"
+jq -en --slurpfile a "$run_dir/failure.json" --slurpfile b "$run_dir/replay.json" \
+  '($a[0].states | length == 2) and ($a[0].states == $b[0].states)'
+```
+
+<!-- !test out bounded exploration -->
+```
+["ok",91,[4]]
+["incomplete","max-states",0]
+["ok",91,[4]]
+["incomplete","max-states",0]
+true
+```
