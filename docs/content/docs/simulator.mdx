@@ -6,7 +6,81 @@ import { Callout } from 'nextra/components'
   This page is under construction.
 </Callout>
 
-Quint's simulator generates samples of executions valid for the model and check invariants at each state of those executions. It is not a verification tool, but it **can** find violations - sometimes faster than the model checker. Given a model and properties (invariants only, temporal properties are not supported), the simulator will output one of the following:
+By default, Quint samples executions and checks invariants at each state. It is not a verification tool, but it **can** find violations - sometimes faster than the model checker.
+
+## Systematic exploration
+
+Use `quint run --strategy` to check a finite model through a given number of steps.
+The depth starts at zero after `init`. All systematic strategies use the TypeScript
+evaluator and enumerate choices in both `init` and `step`.
+
+| Strategy | Exploration |
+| --- | --- |
+| `exhaustive` | Depth-first search over every enabled concrete step. Use it as a reference on small instances. |
+| `por` | For supported guarded commands, compute a stubborn set from the invariants and witnesses. In general models, use sleep sets and concrete read and update locations. |
+| `dpor` | Use event-based dynamic sleep sets. When accesses overlap, replay the two events in both orders and compare the resulting states. |
+
+An event records the source site and branch index of each `any` and the site and
+actual value of each `oneOf` pick. Reordering uses the same values even when a
+set changes its iteration order. An event that becomes disabled or produces a
+different state wakes up. Dependencies include reads in guards and choice domains.
+The evaluator recognizes frame assignments, accesses to different map keys, and
+commutative set insertions, including `m.setBy(k, old => old.union(delta))` when
+`delta` is independent of `old`.
+
+The stubborn-set calculation handles a top-level `any` of deterministic scalar
+guarded commands with complete assignments. Every path to a new observation must
+include a command that can change it. The calculation starts with these commands,
+includes potentially failing expressions, and closes the set under conflicts for
+enabled commands and possible enablers for disabled commands. Moving the first
+such command earlier preserves the length of a path to the observation. Sleep
+sets retain earlier representatives of commuting prefixes of the same length.
+This preserves transient state violations and the depth bound.
+
+### Tendermint example
+
+From the repository root, run the following commands.
+
+```sh
+quint run examples/cosmos/tendermint/TendermintPOR.qnt \
+  --strategy=dpor --init=Init --step=quorumStep --invariant=Agreement \
+  --witnesses=reachedQuorum --max-steps=4
+
+quint run examples/cosmos/tendermint/TendermintPOR.qnt \
+  --strategy=por --init=Init --step=timeoutStep --invariant=phaseOrder \
+  --max-steps=3 --out-schedule=timeout.json --out-itf=timeout.itf.json
+
+quint run examples/cosmos/tendermint/TendermintPOR.qnt \
+  --replay=timeout.json --init=Init --step=timeoutStep --invariant=phaseOrder
+```
+
+With `timeoutStep`, `Agreement` and a depth of three, exhaustive search visits
+16 prefixes and completes six schedules. Both reduced searches visit eight
+prefixes and complete one schedule. The quorum witness first becomes reachable
+at depth four with `quorumStep`. The separate `phaseOrder` invariant detects an
+intermediate state after just one timeout.
+
+### Bounds, output and replay
+
+An `ok` result covers the requested state invariants through the specified
+depth for finite choice domains and atomic actions. A witness reports whether
+its predicate was reached during the search. A violation stops the search and
+retains the failing prefix. Successful searches retain a longest visited prefix.
+`--out-itf` writes the states and `--out-schedule` writes the choices that reproduce
+them against the same model. Pass the same initializer, step and properties to
+`--replay`. The saved schedule determines replay depth. Replay reports a diverging
+choice site or a disabled step.
+
+`--max-work N` limits action evaluations, including speculative dependency
+checks and alternatives evaluated inside boolean guards. Exhausting that budget
+returns `incomplete` with a nonzero exit status. `--out` includes the status,
+search counters and witness results in JSON. Infinite choice domains, use of
+`q::lastTrace`, and run combinators that shift the state inside an action produce
+a diagnostic. Assignments belong in action position. Guards, state predicates
+and ordinary operator arguments must be read-only. Express history-dependent
+safety properties with explicit state variables. Temporal liveness and fairness use the model-checking backends.
+
+The default random simulator reports the following outcomes.
 
 ## Output: OK
 OK means: it could not find a violation in the explored executions. **There might still be an issue**.

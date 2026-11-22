@@ -862,3 +862,43 @@ rm /tmp/debug_test.qnt
 ```
 > this tests debug 42
 ```
+
+### Systematic search, work bounds and counterexample replay
+
+<!-- !test in systematic exploration -->
+```sh
+set -eu
+run_dir=$(mktemp -d)
+trap 'rm -rf "$run_dir"' EXIT
+model=../examples/cosmos/tendermint/TendermintPOR.qnt
+for strategy in exhaustive por dpor; do
+  quint run "$model" --strategy="$strategy" --init=Init --step=timeoutStep \
+    --invariant=Agreement --max-steps=3 --out="$run_dir/report.json"
+  jq -c '[.status, .exploration.prefixes, .exploration.schedules]' "$run_dir/report.json"
+done
+run_timeout() {
+  quint run "$model" --init=Init --step=timeoutStep --invariant=phaseOrder --mbt "$@"
+}
+expect_failure() {
+  local code=0
+  "$@" || code=$?
+  test "$code" -eq 1
+}
+expect_failure run_timeout --strategy=dpor --out-schedule="$run_dir/choices.json" \
+  --out-itf="$run_dir/failure.json" --out="$run_dir/report.json"
+expect_failure run_timeout --replay="$run_dir/choices.json" \
+  --out-itf="$run_dir/replay.json" --out="$run_dir/report.json"
+jq -en --slurpfile a "$run_dir/failure.json" --slurpfile b "$run_dir/replay.json" \
+  '($a[0].states | length == 2) and ($a[0].states == $b[0].states)'
+expect_failure run_timeout --strategy=dpor --max-work=1 --out="$run_dir/report.json"
+jq -r '.status' "$run_dir/report.json"
+```
+
+<!-- !test out systematic exploration -->
+```
+["ok",16,6]
+["ok",8,1]
+["ok",8,1]
+true
+incomplete
+```
