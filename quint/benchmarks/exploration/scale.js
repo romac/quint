@@ -118,7 +118,7 @@ function counter(c, ref) {
   }
 }
 
-function systematic(c, spec, strategy, ref) {
+function systematic(c, spec, strategy, ref, checkpointMs = windowMs) {
   const count = counter(c, ref)
   explore(spec, { maxSteps: 2, strategy })
   global.gc?.()
@@ -129,7 +129,7 @@ function systematic(c, spec, strategy, ref) {
     maxSteps: c.depth,
     maxWork: c.maxWork,
     onState(state) {
-      if (atWindow === undefined && performance.now() - start >= windowMs) atWindow = count.size
+      if (atWindow === undefined && performance.now() - start >= checkpointMs) atWindow = count.size
       count.add(state)
     },
   })
@@ -209,6 +209,23 @@ async function runCase(name, dir) {
   return report
 }
 
+// Re-run DPOR with the precise evaluation count that completed the BFS.
+// Also capture coverage at that BFS run's measured elapsed time.
+async function matchBfs(dir) {
+  const file = path.join(dir, 'tm7-d8.json')
+  const report = JSON.parse(fs.readFileSync(file, 'utf8'))
+  const c = { ...report.config }
+  const { spec } = await loadModel(c)
+  const ref = await reference(c, spec, dir)
+  assert.equal(ref.total, report.reference.total)
+  c.maxWork = ref.layer.evaluations
+  const checkpointMs = ref.layer.ms
+  const dpor = systematic(c, spec, 'dpor', ref, checkpointMs)
+  report.dporAtBfsBudget = { maxWork: c.maxWork, checkpointMs, ...dpor }
+  console.error('DPOR at full BFS work', dpor.status, dpor.distinct, Math.round(dpor.ms), 'ms')
+  writeJson(file, report)
+}
+
 function environment() {
   return {
     runtimeTree: execFileSync('git', ['rev-parse', 'HEAD:quint/src/runtime'], { cwd: root, encoding: 'utf8' }).trim(),
@@ -225,9 +242,13 @@ async function main() {
   const [dir, ...names] = process.argv.slice(2)
   assert.ok(dir, 'Supply a directory for the reference sets and per-case JSON')
   fs.mkdirSync(dir, { recursive: true })
-  for (const name of names.length ? names : Object.keys(configs)) {
-    assert.ok(configs[name], 'Unknown case ' + name)
-    await runCase(name, dir)
+  if (names.length === 1 && names[0] === '--match-bfs') {
+    await matchBfs(dir)
+  } else {
+    for (const name of names.length ? names : Object.keys(configs)) {
+      assert.ok(configs[name], 'Unknown case ' + name)
+      await runCase(name, dir)
+    }
   }
   const cases = Object.keys(configs)
     .filter(n => fs.existsSync(path.join(dir, n + '.json')))
