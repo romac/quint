@@ -60,6 +60,16 @@ prefixes and complete one schedule. The quorum witness first becomes reachable
 at depth four with `quorumStep`. The separate `phaseOrder` invariant detects an
 intermediate state after just one timeout.
 
+To include all protocol actions, run the same four-validator instance with
+`--step=Next --init=Init --invariant=Agreement --witnesses=reachedQuorum --max-steps=4`.
+All three strategies reach the quorum witness and satisfy Agreement at this bound.
+
+| Strategy | Visited prefixes | Completed schedules | Action evaluations |
+| --- | ---: | ---: | ---: |
+| `exhaustive` | 312 | 228 | 5,009 |
+| `por` | 234 | 164 | 4,105 |
+| `dpor` | 181 | 117 | 3,999 |
+
 ### Bounds, output and replay
 
 An `ok` result covers the requested state invariants through the specified

@@ -236,4 +236,17 @@ describe('systematic exploration', () => {
       assert.equal(explore(phases, { strategy, maxSteps: 1 }).status, 'violation')
     }
   }).timeout(20000)
+
+  it('preserves Agreement and reaches quorum through the full Tendermint Next action', async () => {
+    const make = await model('', resolve('../examples/cosmos/tendermint/TendermintPOR.qnt'))
+    const spec = make('Agreement', ['reachedQuorum'], 'Next', 'Init')
+    const [exhaustive, por, dpor] = strategies.map(strategy => explore(spec, { strategy, maxSteps: 4 }))
+    for (const result of [exhaustive, por, dpor]) {
+      assert.equal(result.status, 'ok', result.error?.message)
+      assert.deepEqual(result.witnessed, [true])
+    }
+    assert.isBelow(por.stats.schedules, exhaustive.stats.schedules)
+    assert.isBelow(dpor.stats.schedules, por.stats.schedules)
+    assert.isAbove(dpor.stats.diamonds, 0)
+  }).timeout(20000)
 })
