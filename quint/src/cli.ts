@@ -249,12 +249,16 @@ const runCmd = {
   builder: (yargs: any) =>
     defaultOpts(yargs)
       .option('strategy', {
-        desc: 'search strategy (systematic strategies use the TypeScript evaluator)',
-        choices: ['random', 'exhaustive', 'por', 'dpor'],
+        desc: 'search strategy for simulation or bounded safety checking',
+        choices: ['random', 'exhaustive', 'por', 'dpor', 'bfs'],
         default: 'random',
       })
       .option('max-work', {
         desc: 'limit action evaluations in systematic search, including dependency checks',
+        type: 'number',
+      })
+      .option('max-states', {
+        desc: 'maximum distinct model states retained by breadth-first search',
         type: 'number',
       })
       .option('out-schedule', {
@@ -466,7 +470,8 @@ const validate = (argv: any, opts: any) => {
     const systematic = argv.strategy !== 'random' || argv.replay !== undefined
     if (argv.backend === undefined) argv.backend = systematic ? 'typescript' : 'rust'
     if (systematic) {
-      if (argv.backend !== 'typescript') throw new Error('Systematic exploration uses --backend=typescript')
+      if (argv.maxStates !== undefined && (argv.strategy !== 'bfs' || argv.replay !== undefined))
+        throw new Error('--max-states requires a BFS search')
       if (
         argv.seed !== undefined ||
         argv.maxSamples !== undefined ||
@@ -477,12 +482,13 @@ const validate = (argv: any, opts: any) => {
           'Systematic exploration uses --max-steps and --max-work. Seed, sampling and parallel-run options apply to random runs.'
         )
       }
-      if (![argv.maxSteps, argv.maxWork ?? 0].every(n => Number.isSafeInteger(n) && n >= 0)) {
+      if (![argv.maxSteps, argv.maxWork ?? 0, argv.maxStates ?? 0].every(n => Number.isSafeInteger(n) && n >= 0)) {
         throw new Error('Exploration bounds must be nonnegative safe integers')
       }
       return true
     }
     if (argv.nThreads === undefined) argv['n-threads'] = argv.nThreads = os.cpus().length
+    if (argv.maxStates !== undefined) throw new Error('--max-states requires a BFS search')
     if (argv.maxWork !== undefined || argv.outSchedule !== undefined)
       throw new Error('--max-work and --out-schedule require a systematic strategy')
   }

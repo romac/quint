@@ -3,6 +3,7 @@
 //! Includes the compilation types and stateful datastructures used for
 //! memoization, caching, state variable storage, etc.
 
+use crate::exploration;
 use crate::itf::{DebugMessage, State};
 use crate::nondet;
 use crate::progress::no_report;
@@ -89,6 +90,7 @@ impl CompiledExprWithLazyArgs {
 }
 
 pub struct Env {
+    pub(crate) control: exploration::Control,
     // The storage for state variables, holding their values on the current and
     // next state. We need it in the environment for taking and restoring snapshots.
     pub var_storage: Rc<RefCell<Storage>>,
@@ -111,6 +113,7 @@ pub struct Env {
 impl Env {
     pub fn new(var_storage: Rc<RefCell<Storage>>, verbosity: Verbosity) -> Self {
         Self {
+            control: Default::default(),
             var_storage,
             rand: Rand::new(),
             trace: Vec::new(),
@@ -126,6 +129,7 @@ impl Env {
         verbosity: Verbosity,
     ) -> Self {
         Self {
+            control: Default::default(),
             var_storage,
             rand: Rand::with_state(state),
             trace: Vec::new(),
@@ -149,6 +153,7 @@ impl Env {
 /// A stateful interpreter, with memoization, caching, state variable storage
 /// and tracking of modules.
 pub struct Interpreter {
+    pub(crate) exploring: bool,
     // The storage for state variables, holding their values on the current and
     // next state.
     pub var_storage: Rc<RefCell<Storage>>,
@@ -199,6 +204,7 @@ impl Interpreter {
     pub fn with_var_storage(table: LookupTable, var_storage: Rc<RefCell<Storage>>) -> Self {
         Self {
             table,
+            exploring: false,
             param_registry: FxHashMap::default(),
             const_registry: FxHashMap::default(),
             scoped_cached_values: FxHashMap::default(),
@@ -442,6 +448,18 @@ impl Interpreter {
                 let register = self.get_or_create_var(*id, name);
                 let name = name.clone();
 
+                if self.exploring {
+                    return CompiledExpr::new(move |env| {
+                        let reg = register.borrow();
+                        if let Some(access) = &mut env.control.access {
+                            access.read(reg.name.clone());
+                        }
+                        reg.value.clone().ok_or_else(|| {
+                            QuintError::new("QNT502", &format!("Variable {name} not set"))
+                        })
+                    });
+                }
+
                 CompiledExpr::new(move |_| {
                     register.borrow().clone().value.ok_or(QuintError::new(
                         "QNT502",
@@ -466,7 +484,14 @@ impl Interpreter {
 
         // For top-level value definitions, we can cache the resulting value,
         // as long as we are careful with state changes.
-        match can_cache(def) {
+        // Systematic execution must account for reads and choices even when a
+        // definition was evaluated in an earlier branch or read-only context.
+        let cache = if self.exploring {
+            Cache::None
+        } else {
+            can_cache(def)
+        };
+        match cache {
             Cache::None => {
                 self.memo
                     .borrow_mut()
@@ -525,7 +550,25 @@ impl Interpreter {
 
         let id = expr.id();
 
-        let compiled_expr = self.compile_expr_core(expr);
+        let mut compiled_expr = self.compile_expr_core(expr);
+        if self.exploring {
+            if let QuintEx::QuintApp { id, opcode, .. } = expr {
+                let action_context = matches!(
+                    opcode.as_str(),
+                    "assign"
+                        | "actionAny"
+                        | "actionAll"
+                        | "ite"
+                        | "matchVariant"
+                        | "then"
+                        | "reps"
+                        | "expect"
+                );
+                if !self.table.contains_key(id) && !action_context {
+                    compiled_expr = exploration::as_value(compiled_expr);
+                }
+            }
+        }
         let wrapped_expr = CompiledExpr::new(move |env| {
             compiled_expr.execute(env).map_err(|err| {
                 // Add the reference to the error trace if it's empty (first error location)
@@ -552,6 +595,10 @@ impl Interpreter {
             QuintEx::QuintName { id, name } => {
                 if let Some(def) = self.table.get(id).cloned() {
                     self.compile_def(&def)
+                } else if self.exploring && name == "q::lastTrace" {
+                    exploration::reject(
+                        "Systematic exploration requires explicit model state for history",
+                    )
                 } else {
                     builtin_value(name.as_str())
                 }
@@ -568,7 +615,34 @@ impl Interpreter {
             }
 
             QuintEx::QuintApp { id, opcode, args } => {
-                let compiled_args = args.iter().map(|arg| self.compile(arg)).collect::<Vec<_>>();
+                let mut compiled_args =
+                    args.iter().map(|arg| self.compile(arg)).collect::<Vec<_>>();
+                if self.exploring {
+                    if self.table.contains_key(id) {
+                        compiled_args = compiled_args
+                            .into_iter()
+                            .map(exploration::as_value)
+                            .collect();
+                    } else {
+                        match opcode.as_str() {
+                            "actionAny" => return exploration::action_any(*id, compiled_args),
+                            "ite" | "matchVariant" => {
+                                compiled_args[0] = exploration::as_value(compiled_args[0].clone())
+                            }
+                            "then" | "reps" | "expect" | "q::test" | "q::testOnce" => {
+                                return exploration::reject(
+                                    "Systematic exploration requires an atomic init and step",
+                                )
+                            }
+                            "oneOf" => {
+                                return exploration::reject(
+                                    "oneOf must be bound by nondet in systematic exploration",
+                                )
+                            }
+                            _ => (),
+                        }
+                    }
+                }
 
                 if opcode == "assign" {
                     // Assign is too special, so we handle it separately.
@@ -581,6 +655,38 @@ impl Interpreter {
                         // The RHS was already compiled above, in the caller's context
                         let expr = compiled_args[1].clone();
 
+                        if interpreter.exploring {
+                            let expr = exploration::as_value(expr);
+                            let frame = exploration::variable(&interpreter.table, &args[1]);
+                            let literal = matches!(
+                                args[1],
+                                QuintEx::QuintInt { .. }
+                                    | QuintEx::QuintStr { .. }
+                                    | QuintEx::QuintBool { .. }
+                            );
+                            let rhs = args[1].id();
+                            return CompiledExpr::new(move |env| {
+                                if env.control.read_only {
+                                    return Err(exploration::invalid(
+                                        "A state predicate cannot assign variables",
+                                    ));
+                                }
+                                let start = env.control.access.as_ref().map_or(0, |a| a.len());
+                                let value = expr.execute(env)?;
+                                let mut reg = register.borrow_mut();
+                                if let Some(a) = &mut env.control.access {
+                                    a.assign(
+                                        reg.name.clone(),
+                                        rhs,
+                                        start,
+                                        frame,
+                                        literal.then(|| value.clone()),
+                                    );
+                                }
+                                reg.value = Some(value);
+                                Ok(Value::bool(true))
+                            });
+                        }
                         CompiledExpr::new(move |env| {
                             let value = expr.execute(env)?;
                             register.borrow_mut().value = Some(value.clone());
@@ -622,6 +728,18 @@ impl Interpreter {
                     // Otherwise, this is either a normal (eager) builtin, or an user-defined operator.
                     // For both, we first evaluate the arguments and then apply the operator.
                     let compiled_op = self.compile_op(id, opcode);
+                    if self.exploring {
+                        if let Some(expr) = exploration::tracked(
+                            &self.table,
+                            *id,
+                            opcode,
+                            args,
+                            compiled_args.clone(),
+                            compiled_op.clone(),
+                        ) {
+                            return expr;
+                        }
+                    }
                     CompiledExpr::new(move |env| {
                         let evaluated_args = compiled_args
                             .iter()
@@ -652,6 +770,15 @@ impl Interpreter {
                             // Register the nondet pick name so it appears in the initial state
                             self.initial_nondet_picks.insert(nondet_name.clone());
 
+                            if self.exploring {
+                                return exploration::nondet(
+                                    opdef.id,
+                                    nondet_name,
+                                    set_expr,
+                                    body_expr,
+                                    cached_value,
+                                );
+                            }
                             return nondet::eval_nondet_one_of(
                                 set_expr,
                                 body_expr,

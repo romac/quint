@@ -159,6 +159,21 @@ impl Storage {
         Value::record(map)
     }
 
+    /// Restore an entire model state, including registers absent from the record.
+    /// Trace annotations describe the incoming edge and are cleared before a step.
+    pub(crate) fn load_state(&mut self, state: &Value) {
+        let fields = state.as_record_map();
+        for r in self.vars.values() {
+            let mut reg = r.borrow_mut();
+            reg.value = fields.get(&reg.name).cloned();
+        }
+        for r in self.next_vars.values() {
+            r.borrow_mut().value = None;
+        }
+        self.clear_metadata();
+        self.clear_caches();
+    }
+
     pub fn take_snapshot(&self) -> Snapshot {
         Snapshot {
             next_vars: self

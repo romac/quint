@@ -39,6 +39,7 @@ struct TopLevel {
 enum Command {
     Run(RunArgs),
     SimulateFromStdin(SimulateQuintArgs),
+    ExploreFromStdin(ExploreQuintArgs),
     TestFromStdin(TestQuintArgs),
     ReplFromStdin(ReplFromStdinArgs),
     EvaluateAtStateFromStdin(EvaluateAtStateArgs),
@@ -93,6 +94,11 @@ struct RunArgs {
 #[derive(FromArgs)]
 #[argh(subcommand, name = "simulate-from-stdin")]
 struct SimulateQuintArgs {}
+
+/// Explore finite choices and check bounded safety properties from STDIN.
+#[derive(FromArgs)]
+#[argh(subcommand, name = "explore-from-stdin")]
+struct ExploreQuintArgs {}
 
 /// Run test with input from STDIN
 #[derive(FromArgs)]
@@ -238,6 +244,14 @@ fn main() -> eyre::Result<()> {
     match top_level.command {
         Command::Run(args) => run_simulation(args),
         Command::SimulateFromStdin(_) => simulate_from_stdin(),
+        Command::ExploreFromStdin(_) => {
+            log::set_json(true);
+            let input = serde_json::from_reader(io::stdin().lock())?;
+            let output =
+                quint_evaluator::exploration::explore(input).map_err(|e| eyre::eyre!("{e}"))?;
+            serde_json::to_writer(io::stdout().lock(), &output)?;
+            Ok(())
+        }
         Command::TestFromStdin(_) => test_from_stdin(),
         Command::ReplFromStdin(_) => repl_from_stdin(),
         Command::EvaluateAtStateFromStdin(_) => evaluate_at_state_from_stdin(),

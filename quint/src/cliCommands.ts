@@ -104,6 +104,7 @@ interface OutputStage {
   ignored?: string[]
   // Possible results from 'run'
   status?: 'ok' | 'violation' | 'failure' | 'error' | 'incomplete'
+  limit?: 'max-states' | 'max-work'
   exploration?: SearchStats
   witnessed?: boolean[]
   trace?: QuintEx[]

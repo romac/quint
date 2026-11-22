@@ -4,11 +4,14 @@ import { StubbornSets } from './stubborn'
 import { Event, WorkLimit, sameEvent } from './choices'
 import { EvaluationFailure, ExplorationSpec, Machine, Transition } from './machine'
 
-export type Strategy = 'exhaustive' | 'por' | 'dpor'
+import { BfsStats, breadthFirst } from './bfs'
+
+export type Strategy = 'exhaustive' | 'por' | 'dpor' | 'bfs'
 export interface SearchOptions {
   strategy: Strategy
   maxSteps: number
   maxWork?: number
+  maxStates?: number
   mbt?: boolean
   replay?: Event[]
   /** Observe visited model states without making their contents a reduction goal. */
@@ -16,6 +19,7 @@ export interface SearchOptions {
 }
 
 export interface SearchStats {
+  bfs?: BfsStats
   prefixes: number
   schedules: number
   slept: number
@@ -31,6 +35,7 @@ export interface SearchResult {
   schedule: Event[]
   witnessed: boolean[]
   violated: number[]
+  limit?: 'max-work' | 'max-states'
   error?: QuintError
 }
 
@@ -100,8 +105,15 @@ export function explore(spec: ExplorationSpec, options: SearchOptions): SearchRe
   ) {
     throw new Error('Exploration bounds must be nonnegative safe integers')
   }
-  const machine = new Machine(spec, options.mbt ?? false, maxWork)
+  if (
+    options.maxStates !== undefined &&
+    (strategy !== 'bfs' || options.replay || !Number.isSafeInteger(options.maxStates) || options.maxStates < 0)
+  )
+    throw new Error('--max-states requires a BFS search and a nonnegative safe integer')
   const stubborn = strategy === 'por' ? StubbornSets.forSpec(spec) : undefined
+  const trackAccesses = !options.replay && !stubborn && (strategy === 'por' || strategy === 'dpor')
+  const machine = new Machine(spec, options.mbt ?? false, maxWork, trackAccesses)
+  if (strategy === 'bfs' && !options.replay) return breadthFirst(spec, options, machine, result)
   function* successors(state: RuntimeValue): Generator<Transition> {
     const candidates = machine.successors(state, machine.step)
     if (!stubborn) {
@@ -202,8 +214,10 @@ export function explore(spec: ExplorationSpec, options: SearchOptions): SearchRe
     }
   } catch (e) {
     if (path.length || !(e instanceof WorkLimit)) save()
-    if (e instanceof WorkLimit) result.status = 'incomplete'
-    else {
+    if (e instanceof WorkLimit) {
+      result.status = 'incomplete'
+      result.limit = 'max-work'
+    } else {
       result.status = 'error'
       result.error =
         e instanceof EvaluationFailure

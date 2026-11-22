@@ -279,6 +279,7 @@ const pickOutputStage = ({
   trace,
   seed,
   exploration,
+  limit,
   witnessed,
   main,
 }: ProcedureStage) => {
@@ -298,6 +299,7 @@ const pickOutputStage = ({
     trace,
     seed,
     exploration,
+    limit,
     witnessed,
     main,
   }

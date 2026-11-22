@@ -31,7 +31,7 @@ interface EncodedValue {
 
 // Only ground constructors produced by the writer are accepted. In particular,
 // a malformed boolean must never turn into a truthy string during replay.
-function readValue(input: unknown): RuntimeValue {
+export function readValue(input: unknown): RuntimeValue {
   const ex = input as EncodedValue | null
   if (ex?.kind === 'bool' && typeof ex.value === 'boolean') return rv.mkBool(ex.value)
   if (ex?.kind === 'str' && typeof ex.value === 'string') return rv.mkStr(ex.value)

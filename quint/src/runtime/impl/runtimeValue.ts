@@ -1895,3 +1895,52 @@ function* product(factors: Iterable<RuntimeValue>[]): Generator<RuntimeValue[]> 
     }
   }
 }
+
+/** Exact IDs for model-state components. Composite keys contain only child IDs,
+ * so sharing in immutable model values also saves work when hashing a new state.
+ * Set and map keys are independent of representation and enumeration order. */
+export class StateValueInterner {
+  private readonly keys = new Map<string, number>()
+  private readonly identities = new WeakMap<RuntimeValue, number>()
+
+  private intern(key: string): number {
+    let id = this.keys.get(key)
+    if (id === undefined) {
+      id = this.keys.size + 1 // zero is reserved for an unset register
+      this.keys.set(key, id)
+    }
+    return id
+  }
+
+  id(value: RuntimeValue): number {
+    let id = this.identities.get(value)
+    if (id === undefined) {
+      id = this.intern(this.key(value))
+      this.identities.set(value, id)
+    }
+    return id
+  }
+
+  private key(value: RuntimeValue): string {
+    if (value instanceof RuntimeValueBool) return String(value.value)
+    if (value instanceof RuntimeValueInt) return 'i' + value.value
+    if (value instanceof RuntimeValueStr) return 's' + value.value
+    if (value instanceof RuntimeValueInfSet) return value.kind
+    if (value instanceof RuntimeValueVariant) return 'v' + this.intern('s' + value.label) + ',' + this.id(value.value)
+    if (value instanceof RuntimeValueTupleOrList)
+      return value.kind + Array.from(value.list, child => this.id(child)).join(',')
+    if (value instanceof RuntimeValueRecord || value instanceof RuntimeValueMap) {
+      const pairs = Array.from(value.map as Iterable<[string | RuntimeValue, RuntimeValue]>, ([k, v]) => {
+        const key = typeof k === 'string' ? this.intern('s' + k) : this.id(k)
+        return [key, this.id(v)]
+      })
+      pairs.sort(([a], [b]) => a - b)
+      return (value instanceof RuntimeValueRecord ? 'r' : 'm') + pairs.join(',')
+    }
+    if (isRuntimeSet(value)) {
+      const members = new globalThis.Set(Array.from(finiteChoices(value), child => this.id(child)))
+      return 'S' + [...members].sort((a, b) => a - b).join(',')
+    }
+    throw new Error('BFS requires data values in model state')
+  }
+}

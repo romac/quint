@@ -99,13 +99,18 @@ function summarize(table: LookupTable, ex: QuintEx, g: Group): boolean {
   return valueReads(table, body, g, true)
 }
 
+// This analysis depends only on the resolved model. Both evaluators consume
+// the same dependency and enabler relation; enabledness is decided at runtime.
+export interface StubbornPlan {
+  site: bigint
+  variables: string[]
+  goals: number[]
+  conflicts: number[][]
+  enablers: number[][]
+}
+
 export class StubbornSets {
-  private constructor(
-    private readonly site: bigint,
-    private readonly groups: Group[],
-    private readonly goals: number[],
-    private readonly variables: Set<string>
-  ) {}
+  private constructor(readonly plan: StubbornPlan) {}
 
   static forSpec(spec: ExplorationSpec): StubbornSets | undefined {
     const body = actionBody(spec.table, spec.step)
@@ -123,26 +128,30 @@ export class StubbornSets {
     // to the front length-preserving, also at a finite depth bound.
     const goals = groups.flatMap((g, i) => (g.mayFail || intersects(g.writes, observations.reads) ? [i] : []))
     if (!goals.length || goals.length === groups.length) return undefined
-    return new StubbornSets(body.id, groups, goals, variables)
+    return new StubbornSets({
+      site: body.id,
+      goals,
+      variables: [...variables],
+      conflicts: groups.map(g =>
+        groups.flatMap((h, j) =>
+          intersects(g.writes, h.reads) || intersects(h.writes, g.reads) || intersects(g.writes, h.writes) ? [j] : []
+        )
+      ),
+      enablers: groups.map(g =>
+        groups.flatMap((h, j) => (intersects(h.writes, g.mayFail ? g.reads : g.guards) ? [j] : []))
+      ),
+    })
   }
 
   select(state: RuntimeValue, transitions: Transition[]): Transition[] {
-    if (![...this.variables].every(v => state.toOrderedMap().has(v))) return transitions
-    if (!transitions.every(t => t.event.length === 1 && t.event[0].site === this.site)) return transitions
+    if (!this.plan.variables.every(v => state.toOrderedMap().has(v))) return transitions
+    if (!transitions.every(t => t.event.length === 1 && t.event[0].site === this.plan.site)) return transitions
     const groupOf = (t: Transition) => Number(t.event[0].value.toInt())
     const enabled = new Set(transitions.map(groupOf))
-    const selected = new Set(this.goals)
+    const selected = new Set(this.plan.goals)
     for (const i of selected) {
-      const g = this.groups[i]
-      this.groups.forEach((h, j) => {
-        if (selected.has(j)) return
-        // A disabled group needs an enabler. For a possibly failing RHS,
-        // changing any input may expose an earlier evaluation error as well.
-        const needed = enabled.has(i)
-          ? intersects(g.writes, h.reads) || intersects(h.writes, g.reads) || intersects(g.writes, h.writes)
-          : intersects(h.writes, g.mayFail ? g.reads : g.guards)
-        if (needed) selected.add(j)
-      })
+      const needed = enabled.has(i) ? this.plan.conflicts[i] : this.plan.enablers[i]
+      for (const j of needed) selected.add(j)
     }
     const ample = transitions.filter(t => selected.has(groupOf(t)))
     // Preserve a genuine terminal execution for trace output.

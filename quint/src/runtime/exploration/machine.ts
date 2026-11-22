@@ -31,6 +31,8 @@ export class EvaluationFailure extends Error {
   }
 }
 
+const emptyAccesses = new Accesses()
+
 const predicateChoices: ChoiceSource = {
   select() {
     throw new Error('A state predicate cannot make nondeterministic choices')
@@ -45,7 +47,12 @@ export class Machine {
   readonly witnesses: EvalFunction[]
   evaluations = 0
 
-  constructor(spec: ExplorationSpec, mbt: boolean, private readonly maxWork: number) {
+  constructor(
+    spec: ExplorationSpec,
+    mbt: boolean,
+    private readonly maxWork: number,
+    private readonly trackAccesses = true
+  ) {
     const builder = new Builder(spec.table, mbt, true)
     const deterministic = () => {
       throw new Error('Uncontrolled random choice during systematic exploration')
@@ -70,18 +77,20 @@ export class Machine {
     store.fromRecord(state)
     store.clearMetadata()
     this.ctx.choices = choices
-    this.ctx.accesses = new Accesses()
+    const accesses = this.trackAccesses ? new Accesses() : undefined
+    this.ctx.accesses = accesses
     const result = action(this.ctx)
     if (result.isLeft()) throw new EvaluationFailure(result.value)
     if (!result.value.toBool()) return undefined
     // Quint clears unassigned registers on shift. This is a write even if the
     // register was already unset when this particular step ran.
-    store.nextVars.forEach(reg => {
-      if (reg.value.isLeft()) {
-        this.ctx.accesses!.writes.push({ name: reg.name })
-        this.ctx.accesses!.unset.add(reg.name)
-      }
-    })
+    if (accesses)
+      store.nextVars.forEach(reg => {
+        if (reg.value.isLeft()) {
+          accesses.writes.push({ name: reg.name })
+          accesses.unset.add(reg.name)
+        }
+      })
     store.shiftVars()
     return store.asRecord()
   }
@@ -91,7 +100,8 @@ export class Machine {
     do {
       try {
         const next = this.execute(state, action, choices)
-        if (next !== undefined) yield { state: next, event: choices.event(), accesses: this.ctx.accesses! }
+        if (next !== undefined)
+          yield { state: next, event: choices.event(), accesses: this.ctx.accesses ?? emptyAccesses }
       } catch (err) {
         if (err instanceof EvaluationFailure) err.event = choices.event()
         throw err
@@ -103,7 +113,9 @@ export class Machine {
     const choices = new ReplayChoices(event)
     try {
       const next = this.execute(state, action, choices)
-      return next !== undefined && choices.complete ? { state: next, event, accesses: this.ctx.accesses! } : undefined
+      return next !== undefined && choices.complete
+        ? { state: next, event, accesses: this.ctx.accesses ?? emptyAccesses }
+        : undefined
     } catch (e) {
       if (e instanceof EvaluationFailure && !choices.complete) return undefined
       throw e
