@@ -14,7 +14,9 @@ Use `quint run --strategy` to check a finite model through a given number of ste
 The depth starts at zero after `init`. All four strategies enumerate choices in both
 `init` and `step` on the TypeScript and Rust evaluators. Random simulation remains
 the default. A systematic command defaults to TypeScript. Select the native
-evaluator with `--backend=rust`.
+evaluator with `--backend=rust`. Both evaluators support arbitrary-precision integer
+picks in explicit finite sets. The Rust evaluator requires the endpoints of
+`a.to(b)` intervals to fit in signed 64-bit integers.
 
 | Strategy | Exploration |
 | --- | --- |

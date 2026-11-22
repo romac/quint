@@ -1,0 +1,736 @@
+{
+  "platform": "Linux-6.18.57-x86_64-with-glibc2.41",
+  "cpu": "Intel Xeon Platinum 8573C",
+  "node": "24.22.3",
+  "rust": "1.93.1",
+  "rssSamplingMilliseconds": 50,
+  "measurements": [
+    {
+      "trial": 1,
+      "case": "tm7-d8",
+      "backend": "typescript",
+      "strategy": "bfs",
+      "status": "ok",
+      "limit": null,
+      "maxStates": null,
+      "maxWork": null,
+      "seconds": 83.137475927997,
+      "peakProcessMiB": 449.4921875,
+      "sampledPeakTreeMiB": 444.3671875,
+      "witnessed": [
+        true
+      ],
+      "prefixes": 30530,
+      "schedules": 0,
+      "slept": 0,
+      "stubbornPruned": 0,
+      "diamonds": 0,
+      "evaluations": 1556794,
+      "distinctStates": 30530,
+      "duplicates": 32063,
+      "expandedStates": 5308,
+      "peakFrontier": 3029,
+      "completedDepth": 8,
+      "witnessDepths": [
+        6
+      ]
+    },
+    {
+      "trial": 1,
+      "case": "tm4-d7",
+      "backend": "typescript",
+      "strategy": "bfs",
+      "status": "ok",
+      "limit": null,
+      "maxStates": null,
+      "maxWork": null,
+      "seconds": 6.378538886001479,
+      "peakProcessMiB": 286.7265625,
+      "sampledPeakTreeMiB": 282.1015625,
+      "witnessed": [
+        true
+      ],
+      "prefixes": 1455,
+      "schedules": 0,
+      "slept": 0,
+      "stubbornPruned": 0,
+      "diamonds": 0,
+      "evaluations": 59953,
+      "distinctStates": 1455,
+      "duplicates": 5529,
+      "expandedStates": 627,
+      "peakFrontier": 443,
+      "completedDepth": 7,
+      "witnessDepths": [
+        4
+      ]
+    },
+    {
+      "trial": 1,
+      "case": "tm4-d9",
+      "backend": "typescript",
+      "strategy": "bfs",
+      "status": "ok",
+      "limit": null,
+      "maxStates": null,
+      "maxWork": null,
+      "seconds": 24.57014669599812,
+      "peakProcessMiB": 407.171875,
+      "sampledPeakTreeMiB": 405.95703125,
+      "witnessed": [
+        true
+      ],
+      "prefixes": 3861,
+      "schedules": 0,
+      "slept": 0,
+      "stubbornPruned": 0,
+      "diamonds": 0,
+      "evaluations": 300881,
+      "distinctStates": 3861,
+      "duplicates": 24453,
+      "expandedStates": 2596,
+      "peakFrontier": 1196,
+      "completedDepth": 9,
+      "witnessDepths": [
+        4
+      ]
+    },
+    {
+      "trial": 1,
+      "case": "timeouts",
+      "backend": "typescript",
+      "strategy": "bfs",
+      "status": "ok",
+      "limit": null,
+      "maxStates": null,
+      "maxWork": null,
+      "seconds": 10.534201924001536,
+      "peakProcessMiB": 402.00390625,
+      "sampledPeakTreeMiB": 397.12890625,
+      "witnessed": [
+        true
+      ],
+      "prefixes": 4096,
+      "schedules": 0,
+      "slept": 0,
+      "stubbornPruned": 0,
+      "diamonds": 0,
+      "evaluations": 49141,
+      "distinctStates": 4096,
+      "duplicates": 20481,
+      "expandedStates": 4095,
+      "peakFrontier": 988,
+      "completedDepth": 12,
+      "witnessDepths": [
+        12
+      ]
+    },
+    {
+      "trial": 1,
+      "case": "twophase",
+      "backend": "typescript",
+      "strategy": "bfs",
+      "status": "incomplete",
+      "limit": "max-states",
+      "maxStates": 30000,
+      "maxWork": null,
+      "seconds": 20.21585254999809,
+      "peakProcessMiB": 458.00390625,
+      "sampledPeakTreeMiB": 458.00390625,
+      "witnessed": [
+        false
+      ],
+      "prefixes": 30000,
+      "schedules": 0,
+      "slept": 0,
+      "stubbornPruned": 0,
+      "diamonds": 0,
+      "evaluations": 388857,
+      "distinctStates": 30000,
+      "duplicates": 104536,
+      "expandedStates": 11436,
+      "peakFrontier": 18563,
+      "completedDepth": 6,
+      "witnessDepths": [
+        null
+      ]
+    },
+    {
+      "trial": 1,
+      "case": "log",
+      "backend": "typescript",
+      "strategy": "bfs",
+      "status": "incomplete",
+      "limit": "max-states",
+      "maxStates": 50000,
+      "maxWork": null,
+      "seconds": 3.8686904169990157,
+      "peakProcessMiB": 329.37109375,
+      "sampledPeakTreeMiB": 325.62109375,
+      "witnessed": [
+        true
+      ],
+      "prefixes": 50000,
+      "schedules": 0,
+      "slept": 0,
+      "stubbornPruned": 0,
+      "diamonds": 0,
+      "evaluations": 50001,
+      "distinctStates": 50000,
+      "duplicates": 0,
+      "expandedStates": 16666,
+      "peakFrontier": 33333,
+      "completedDepth": 9,
+      "witnessDepths": [
+        6
+      ]
+    },
+    {
+      "trial": 1,
+      "case": "timeouts",
+      "backend": "typescript",
+      "strategy": "dpor",
+      "status": "ok",
+      "limit": null,
+      "maxStates": null,
+      "maxWork": 1556794,
+      "seconds": 9.9526737160013,
+      "peakProcessMiB": 420.6015625,
+      "sampledPeakTreeMiB": 419.01953125,
+      "witnessed": [
+        true
+      ],
+      "prefixes": 4096,
+      "schedules": 1,
+      "slept": 20481,
+      "stubbornPruned": 0,
+      "diamonds": 0,
+      "evaluations": 65539
+    },
+    {
+      "trial": 1,
+      "case": "tm7-d8",
+      "backend": "typescript",
+      "strategy": "dpor",
+      "status": "incomplete",
+      "limit": "max-work",
+      "maxStates": null,
+      "maxWork": 1556794,
+      "seconds": 87.65166406999924,
+      "peakProcessMiB": 430.40234375,
+      "sampledPeakTreeMiB": 425.02734375,
+      "witnessed": [
+        true
+      ],
+      "prefixes": 74454,
+      "schedules": 70359,
+      "slept": 5908,
+      "stubbornPruned": 0,
+      "diamonds": 17462,
+      "evaluations": 1556794
+    },
+    {
+      "trial": 1,
+      "case": "log-full",
+      "backend": "typescript",
+      "strategy": "bfs",
+      "status": "ok",
+      "limit": null,
+      "maxStates": null,
+      "maxWork": null,
+      "seconds": 28.868889145996945,
+      "peakProcessMiB": 1075.171875,
+      "sampledPeakTreeMiB": 1070.81640625,
+      "witnessed": [
+        true
+      ],
+      "prefixes": 797161,
+      "schedules": 0,
+      "slept": 0,
+      "stubbornPruned": 0,
+      "diamonds": 0,
+      "evaluations": 797161,
+      "distinctStates": 797161,
+      "duplicates": 0,
+      "expandedStates": 265720,
+      "peakFrontier": 177147,
+      "completedDepth": 12,
+      "witnessDepths": [
+        6
+      ]
+    },
+    {
+      "trial": 1,
+      "case": "log-full",
+      "backend": "typescript",
+      "strategy": "exhaustive",
+      "status": "ok",
+      "limit": null,
+      "maxStates": null,
+      "maxWork": null,
+      "seconds": 23.569679193999036,
+      "peakProcessMiB": 420.65625,
+      "sampledPeakTreeMiB": 416.03125,
+      "witnessed": [
+        true
+      ],
+      "prefixes": 797161,
+      "schedules": 531441,
+      "slept": 0,
+      "stubbornPruned": 0,
+      "diamonds": 0,
+      "evaluations": 797161
+    },
+    {
+      "trial": 1,
+      "case": "log-full",
+      "backend": "typescript",
+      "strategy": "dpor",
+      "status": "ok",
+      "limit": null,
+      "maxStates": null,
+      "maxWork": null,
+      "seconds": 40.44198086200049,
+      "peakProcessMiB": 416.671875,
+      "sampledPeakTreeMiB": 412.69921875,
+      "witnessed": [
+        true
+      ],
+      "prefixes": 797161,
+      "schedules": 531441,
+      "slept": 0,
+      "stubbornPruned": 0,
+      "diamonds": 265719,
+      "evaluations": 1328599
+    },
+    {
+      "trial": 2,
+      "case": "tm7-d8",
+      "backend": "typescript",
+      "strategy": "bfs",
+      "status": "ok",
+      "limit": null,
+      "maxStates": null,
+      "maxWork": null,
+      "seconds": 73.6917630099997,
+      "peakProcessMiB": 542.6953125,
+      "sampledPeakTreeMiB": 537.4453125,
+      "witnessed": [
+        true
+      ],
+      "prefixes": 30530,
+      "schedules": 0,
+      "slept": 0,
+      "stubbornPruned": 0,
+      "diamonds": 0,
+      "evaluations": 1556794,
+      "distinctStates": 30530,
+      "duplicates": 32063,
+      "expandedStates": 5308,
+      "peakFrontier": 3029,
+      "completedDepth": 8,
+      "witnessDepths": [
+        6
+      ]
+    },
+    {
+      "trial": 3,
+      "case": "tm7-d8",
+      "backend": "typescript",
+      "strategy": "bfs",
+      "status": "ok",
+      "limit": null,
+      "maxStates": null,
+      "maxWork": null,
+      "seconds": 79.15633442000035,
+      "peakProcessMiB": 504.92578125,
+      "sampledPeakTreeMiB": 504.92578125,
+      "witnessed": [
+        true
+      ],
+      "prefixes": 30530,
+      "schedules": 0,
+      "slept": 0,
+      "stubbornPruned": 0,
+      "diamonds": 0,
+      "evaluations": 1556794,
+      "distinctStates": 30530,
+      "duplicates": 32063,
+      "expandedStates": 5308,
+      "peakFrontier": 3029,
+      "completedDepth": 8,
+      "witnessDepths": [
+        6
+      ]
+    },
+    {
+      "trial": 1,
+      "case": "tm7-d8",
+      "backend": "rust",
+      "strategy": "bfs",
+      "status": "ok",
+      "limit": null,
+      "maxStates": null,
+      "maxWork": null,
+      "seconds": 16.257023551999737,
+      "peakProcessMiB": 358.8203125,
+      "sampledPeakTreeMiB": 521.87109375,
+      "witnessed": [
+        true
+      ],
+      "prefixes": 30530,
+      "schedules": 0,
+      "slept": 0,
+      "stubbornPruned": 0,
+      "diamonds": 0,
+      "evaluations": 1556794,
+      "distinctStates": 30530,
+      "duplicates": 32063,
+      "expandedStates": 5308,
+      "peakFrontier": 3029,
+      "completedDepth": 8,
+      "witnessDepths": [
+        6
+      ]
+    },
+    {
+      "trial": 1,
+      "case": "tm4-d7",
+      "backend": "rust",
+      "strategy": "bfs",
+      "status": "ok",
+      "limit": null,
+      "maxStates": null,
+      "maxWork": null,
+      "seconds": 2.9878576990013244,
+      "peakProcessMiB": 159.78515625,
+      "sampledPeakTreeMiB": 175.65625,
+      "witnessed": [
+        true
+      ],
+      "prefixes": 1455,
+      "schedules": 0,
+      "slept": 0,
+      "stubbornPruned": 0,
+      "diamonds": 0,
+      "evaluations": 59953,
+      "distinctStates": 1455,
+      "duplicates": 5529,
+      "expandedStates": 627,
+      "peakFrontier": 443,
+      "completedDepth": 7,
+      "witnessDepths": [
+        4
+      ]
+    },
+    {
+      "trial": 1,
+      "case": "tm4-d9",
+      "backend": "rust",
+      "strategy": "bfs",
+      "status": "ok",
+      "limit": null,
+      "maxStates": null,
+      "maxWork": null,
+      "seconds": 4.849066532999132,
+      "peakProcessMiB": 161.8828125,
+      "sampledPeakTreeMiB": 204.45703125,
+      "witnessed": [
+        true
+      ],
+      "prefixes": 3861,
+      "schedules": 0,
+      "slept": 0,
+      "stubbornPruned": 0,
+      "diamonds": 0,
+      "evaluations": 300881,
+      "distinctStates": 3861,
+      "duplicates": 24453,
+      "expandedStates": 2596,
+      "peakFrontier": 1195,
+      "completedDepth": 9,
+      "witnessDepths": [
+        4
+      ]
+    },
+    {
+      "trial": 1,
+      "case": "timeouts",
+      "backend": "rust",
+      "strategy": "bfs",
+      "status": "ok",
+      "limit": null,
+      "maxStates": null,
+      "maxWork": null,
+      "seconds": 3.7082846960001916,
+      "peakProcessMiB": 166.1953125,
+      "sampledPeakTreeMiB": 193.16796875,
+      "witnessed": [
+        true
+      ],
+      "prefixes": 4096,
+      "schedules": 0,
+      "slept": 0,
+      "stubbornPruned": 0,
+      "diamonds": 0,
+      "evaluations": 49141,
+      "distinctStates": 4096,
+      "duplicates": 20481,
+      "expandedStates": 4095,
+      "peakFrontier": 988,
+      "completedDepth": 12,
+      "witnessDepths": [
+        12
+      ]
+    },
+    {
+      "trial": 1,
+      "case": "twophase",
+      "backend": "rust",
+      "strategy": "bfs",
+      "status": "incomplete",
+      "limit": "max-states",
+      "maxStates": 30000,
+      "maxWork": null,
+      "seconds": 5.450923505999526,
+      "peakProcessMiB": 166.83984375,
+      "sampledPeakTreeMiB": 249.90625,
+      "witnessed": [
+        false
+      ],
+      "prefixes": 30000,
+      "schedules": 0,
+      "slept": 0,
+      "stubbornPruned": 0,
+      "diamonds": 0,
+      "evaluations": 388857,
+      "distinctStates": 30000,
+      "duplicates": 104536,
+      "expandedStates": 11436,
+      "peakFrontier": 18563,
+      "completedDepth": 6,
+      "witnessDepths": [
+        null
+      ]
+    },
+    {
+      "trial": 1,
+      "case": "log",
+      "backend": "rust",
+      "strategy": "bfs",
+      "status": "incomplete",
+      "limit": "max-states",
+      "maxStates": 50000,
+      "maxWork": null,
+      "seconds": 2.433537802997307,
+      "peakProcessMiB": 162.60546875,
+      "sampledPeakTreeMiB": 283.265625,
+      "witnessed": [
+        true
+      ],
+      "prefixes": 50000,
+      "schedules": 0,
+      "slept": 0,
+      "stubbornPruned": 0,
+      "diamonds": 0,
+      "evaluations": 50001,
+      "distinctStates": 50000,
+      "duplicates": 0,
+      "expandedStates": 16666,
+      "peakFrontier": 33333,
+      "completedDepth": 9,
+      "witnessDepths": [
+        6
+      ]
+    },
+    {
+      "trial": 1,
+      "case": "timeouts",
+      "backend": "rust",
+      "strategy": "dpor",
+      "status": "ok",
+      "limit": null,
+      "maxStates": null,
+      "maxWork": 1556794,
+      "seconds": 2.862581664998288,
+      "peakProcessMiB": 174.08984375,
+      "sampledPeakTreeMiB": 171.421875,
+      "witnessed": [
+        true
+      ],
+      "prefixes": 4096,
+      "schedules": 1,
+      "slept": 20481,
+      "stubbornPruned": 0,
+      "diamonds": 0,
+      "evaluations": 65539
+    },
+    {
+      "trial": 1,
+      "case": "tm7-d8",
+      "backend": "rust",
+      "strategy": "dpor",
+      "status": "incomplete",
+      "limit": "max-work",
+      "maxStates": null,
+      "maxWork": 1556794,
+      "seconds": 16.20062543200038,
+      "peakProcessMiB": 167.38671875,
+      "sampledPeakTreeMiB": 170.6015625,
+      "witnessed": [
+        true
+      ],
+      "prefixes": 71065,
+      "schedules": 66934,
+      "slept": 5925,
+      "stubbornPruned": 0,
+      "diamonds": 16746,
+      "evaluations": 1556794
+    },
+    {
+      "trial": 1,
+      "case": "log-full",
+      "backend": "rust",
+      "strategy": "bfs",
+      "status": "ok",
+      "limit": null,
+      "maxStates": null,
+      "maxWork": null,
+      "seconds": 9.466170143001364,
+      "peakProcessMiB": 1900.93359375,
+      "sampledPeakTreeMiB": 2059.73828125,
+      "witnessed": [
+        true
+      ],
+      "prefixes": 797161,
+      "schedules": 0,
+      "slept": 0,
+      "stubbornPruned": 0,
+      "diamonds": 0,
+      "evaluations": 797161,
+      "distinctStates": 797161,
+      "duplicates": 0,
+      "expandedStates": 265720,
+      "peakFrontier": 177147,
+      "completedDepth": 12,
+      "witnessDepths": [
+        6
+      ]
+    },
+    {
+      "trial": 1,
+      "case": "log-full",
+      "backend": "rust",
+      "strategy": "exhaustive",
+      "status": "ok",
+      "limit": null,
+      "maxStates": null,
+      "maxWork": null,
+      "seconds": 5.777725666997867,
+      "peakProcessMiB": 161.13671875,
+      "sampledPeakTreeMiB": 164.1484375,
+      "witnessed": [
+        true
+      ],
+      "prefixes": 797161,
+      "schedules": 531441,
+      "slept": 0,
+      "stubbornPruned": 0,
+      "diamonds": 0,
+      "evaluations": 797161
+    },
+    {
+      "trial": 1,
+      "case": "log-full",
+      "backend": "rust",
+      "strategy": "dpor",
+      "status": "ok",
+      "limit": null,
+      "maxStates": null,
+      "maxWork": null,
+      "seconds": 5.588668383003096,
+      "peakProcessMiB": 162.1953125,
+      "sampledPeakTreeMiB": 164.96484375,
+      "witnessed": [
+        true
+      ],
+      "prefixes": 797161,
+      "schedules": 531441,
+      "slept": 0,
+      "stubbornPruned": 0,
+      "diamonds": 265719,
+      "evaluations": 1328599
+    },
+    {
+      "trial": 2,
+      "case": "tm7-d8",
+      "backend": "rust",
+      "strategy": "bfs",
+      "status": "ok",
+      "limit": null,
+      "maxStates": null,
+      "maxWork": null,
+      "seconds": 44.110573950998514,
+      "peakProcessMiB": 358.8203125,
+      "sampledPeakTreeMiB": 521.15234375,
+      "witnessed": [
+        true
+      ],
+      "prefixes": 30530,
+      "schedules": 0,
+      "slept": 0,
+      "stubbornPruned": 0,
+      "diamonds": 0,
+      "evaluations": 1556794,
+      "distinctStates": 30530,
+      "duplicates": 32063,
+      "expandedStates": 5308,
+      "peakFrontier": 3029,
+      "completedDepth": 8,
+      "witnessDepths": [
+        6
+      ]
+    },
+    {
+      "trial": 3,
+      "case": "tm7-d8",
+      "backend": "rust",
+      "strategy": "bfs",
+      "status": "ok",
+      "limit": null,
+      "maxStates": null,
+      "maxWork": null,
+      "seconds": 22.51906713900098,
+      "peakProcessMiB": 358.77734375,
+      "sampledPeakTreeMiB": 523.04296875,
+      "witnessed": [
+        true
+      ],
+      "prefixes": 30530,
+      "schedules": 0,
+      "slept": 0,
+      "stubbornPruned": 0,
+      "diamonds": 0,
+      "evaluations": 1556794,
+      "distinctStates": 30530,
+      "duplicates": 32063,
+      "expandedStates": 5308,
+      "peakFrontier": 3029,
+      "completedDepth": 8,
+      "witnessDepths": [
+        6
+      ]
+    }
+  ],
+  "interruptedTrials": [
+    {
+      "case": "tm7-d8",
+      "backend": "typescript",
+      "strategy": "bfs",
+      "signal": 9,
+      "seconds": 94.17164724699978,
+      "peakProcessMiB": 457.7578125,
+      "sampledPeakTreeMiB": 457.5078125
+    }
+  ]
+}

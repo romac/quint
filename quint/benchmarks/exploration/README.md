@@ -2,7 +2,7 @@
 
 DPOR reached every state that exhaustive search found in all seven workloads. At depth six on Tendermint, it cut median time from 6.47 s to 3.03 s. TypeScript random sampling visited a median of 433 of the 627 states in 3.03 s.
 
-The [larger-state-space benchmarks](LARGE.md) cover seven-validator Tendermint, eight-manager two-phase commit, twelve independent timeouts and a depth-twelve ordered log. They include fixed-work and fixed-time comparisons against a state-caching breadth-first search and seeded random sampling.
+The [larger-state-space benchmarks](LARGE.md) cover seven-validator Tendermint, eight-manager two-phase commit, twelve independent timeouts and a depth-twelve ordered log. They include fixed-work and fixed-time comparisons against a state-caching breadth-first search and seeded random sampling. The [production BFS measurements](BFS.md) compare the native Rust and TypeScript strategies, their memory use and replay behavior.
 
 The Tendermint cases use the full upstream `Next` relation with four correct validators, one valid value and round zero. The independent-timeout case uses seven validators and restricts the scheduler to the six non-proposers. Two-phase commit uses the upstream three-resource-manager instance. The guarded handshake and ordered log isolate two different dependency patterns.
 
