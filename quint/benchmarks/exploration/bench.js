@@ -292,41 +292,89 @@ async function rustComparison() {
     assert.ok(count.states.isSubset(seen.states), 'Rust state outside the exhaustive reference')
     trials.push({ states: count.states.size, hit: r.witnessingTraces[0] > 0 })
   }
-  const cli = path.join(root, 'quint/dist/src/cli.js')
+  const timeCli = (name, seed, samples = 1000) => {
+    const args = [
+      path.join(root, 'quint/dist/src/cli.js'),
+      'run',
+      file,
+      '--main=' + c.main,
+      '--init=' + c.init,
+      '--step=' + c.step,
+      '--invariant=' + c.invariant,
+      '--witnesses=' + c.goal,
+      '--max-steps=' + c.depth,
+      '--verbosity=0',
+    ]
+    if (name.startsWith('random'))
+      args.push(
+        '--backend=' + (name === 'randomTS' ? 'typescript' : 'rust'),
+        '--max-samples=' + samples,
+        '--n-threads=1',
+        '--seed=' + seed
+      )
+    else args.push('--strategy=' + name)
+    return elapsed(() => execFileSync(process.execPath, args, { stdio: ['ignore', 'ignore', 'pipe'] }))
+  }
   const milliseconds = {}
   const names = ['randomTS', 'randomRust', 'exhaustive', 'por', 'dpor']
   for (const name of names) milliseconds[name] = []
   for (let round = -1; round < 5; round++) {
     for (let j = 0; j < names.length; j++) {
       const name = names[(j + round + names.length) % names.length]
-      const args = [
-        cli,
-        'run',
-        file,
-        '--main=' + c.main,
-        '--init=' + c.init,
-        '--step=' + c.step,
-        '--invariant=' + c.invariant,
-        '--witnesses=' + c.goal,
-        '--max-steps=' + c.depth,
-        '--verbosity=0',
-      ]
-      if (name.startsWith('random'))
-        args.push(
-          '--backend=' + (name === 'randomTS' ? 'typescript' : 'rust'),
-          '--max-samples=1000',
-          '--n-threads=1',
-          '--seed=' + seeds[(round + seeds.length) % seeds.length]
-        )
-      else args.push('--strategy=' + name)
-      const t = elapsed(() => execFileSync(process.execPath, args, { stdio: ['ignore', 'ignore', 'pipe'] }))
+      const t = timeCli(name, seeds[(round + seeds.length) % seeds.length])
       if (round >= 0) milliseconds[name].push(t)
     }
+  }
+  // A fresh CLI invocation has a sizeable fixed cost. Fit two batch sizes
+  // instead of extrapolating throughput from a single sample count.
+  const target = median(milliseconds.dpor)
+  const time1000 = median(milliseconds.randomRust)
+  const time4000 = median(seeds.slice(-3).map(seed => timeCli('randomRust', seed, 4000)))
+  assert.ok(time4000 > time1000, 'Rust calibration needs a positive marginal cost per trace')
+  const msPerTrace = (time4000 - time1000) / 3000
+  let matchedSamples = Math.max(1, Math.round(1000 + (target - time1000) / msPerTrace))
+  for (let i = 0; i < 2; i++) {
+    milliseconds.rustMatched = seeds.slice(0, 5).map(seed => timeCli('randomRust', seed, matchedSamples))
+    const measured = median(milliseconds.rustMatched)
+    if (i === 0 && Math.abs(measured / target - 1) > 0.12) {
+      matchedSamples = Math.max(1, Math.round(matchedSamples + (target - measured) / msPerTrace))
+    } else break
+  }
+  console.error('Collecting Rust coverage at 100, 1000 and', matchedSamples, 'traces')
+  const cutoffs = new Set([fixedSamples, 1000, matchedSamples])
+  const cap = Math.max(...cutoffs)
+  for (const [index, seed] of seeds.entries()) {
+    const count = stateCollector()
+    const coverage = {}
+    let start = seed
+    let samples = 0
+    // Rust returns traces ranked by quality. Recover their order from each
+    // trace's starting RNG counter. Replay one overlapping trace between
+    // batches to continue the original campaign with bounded export memory.
+    while (samples < cap) {
+      const take = Math.min(160, cap - samples)
+      const requested = take + Number(samples + take < cap)
+      const r = await wrapper.simulate(input, file, requested, c.depth, requested, 1, start, false)
+      assert.equal(r.status, 'ok', r.errors[0]?.message)
+      assert.equal(r.bestTraces.length, requested)
+      const ordered = r.bestTraces.sort((a, b) => (a.seed < b.seed ? -1 : a.seed > b.seed ? 1 : 0))
+      assert.equal(ordered[0].seed, start)
+      assert.ok(ordered.every((t, j) => !j || t.seed > ordered[j - 1].seed))
+      for (const trace of ordered.slice(0, take)) {
+        for (const state of trace.states) count.add(rv.fromQuintEx(state))
+        if (cutoffs.has(++samples)) coverage[samples] = count.states.size
+      }
+      if (requested > take) start = ordered[take].seed
+    }
+    assert.ok(count.states.isSubset(seen.states))
+    assert.equal(coverage[fixedSamples], trials[index].states)
+    trials[index].coverage = coverage
   }
   return {
     model: c.name,
     coverageSamples: fixedSamples,
     timedRandomSamples: 1000,
+    matchedSamples,
     threads: 1,
     trials,
     cliMilliseconds: milliseconds,
@@ -342,7 +390,8 @@ async function main() {
     assert.ok(output && !output.startsWith('--'), 'Supply a JSON filename after --output')
     args.splice(outputIndex, 2)
   }
-  const names = args.filter(s => s !== '--rust')
+  const rustOnly = args.includes('--rust-only')
+  const names = args.filter(s => s !== '--rust' && s !== '--rust-only')
   for (const name of names)
     assert.ok(
       cases.some(c => c.name === name),
@@ -368,15 +417,15 @@ async function main() {
     fs.writeFileSync(output + '.tmp', JSON.stringify(results, null, 2) + '\n')
     fs.renameSync(output + '.tmp', output)
   }
-  for (const c of cases.filter(c => !names.length || names.includes(c.name))) {
+  for (const c of cases.filter(c => !rustOnly && (!names.length || names.includes(c.name)))) {
     console.error('Measuring ' + c.name)
     const result = await benchmark(c)
     results.cases.push(result)
     checkpoint()
     console.error(c.name, 'states:', result.systematic.exhaustive.states, 'matched samples:', result.matchedSamples)
   }
-  results.transient = await transientProbe()
-  if (args.includes('--rust')) {
+  if (!rustOnly) results.transient = await transientProbe()
+  if (rustOnly || args.includes('--rust')) {
     console.error('Measuring single-worker Rust coverage and fresh CLI processes')
     results.rust = await rustComparison()
   }
