@@ -45,6 +45,8 @@ import { isDeepStrictEqual as isEqual } from 'node:util'
 import { Maybe, just, none } from '@sweet-monads/maybe'
 import { compileToTlaplus } from './compileToTlaplus'
 import { Evaluator } from './runtime/impl/evaluator'
+import type { SearchStats } from './runtime/exploration/search'
+import { runExploration } from './cliExploration'
 import { NameResolver } from './names/resolver'
 import { convertInit } from './ir/initToPredicate'
 import { CommandWrapper } from './rust/commandWrapper'
@@ -101,7 +103,9 @@ interface OutputStage {
   failed?: string[]
   ignored?: string[]
   // Possible results from 'run'
-  status?: 'ok' | 'violation' | 'failure' | 'error'
+  status?: 'ok' | 'violation' | 'failure' | 'error' | 'incomplete'
+  exploration?: SearchStats
+  witnessed?: boolean[]
   trace?: QuintEx[]
   seed?: bigint
   /* Docstrings by definition name by module name */
@@ -433,6 +437,10 @@ export async function runSimulator(prev: TypecheckedStage): Promise<CLIProcedure
     })
   }
   const [init, step, invariant, ...witnesses] = argsParsingResult.value
+
+  if ((prev.args.strategy && prev.args.strategy !== 'random') || prev.args.replay) {
+    return runExploration(prev, init, step, witnesses, individualInvariants, options)
+  }
 
   let outcome: Outcome
   if (prev.args.backend == 'rust') {

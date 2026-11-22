@@ -278,6 +278,8 @@ const pickOutputStage = ({
   status,
   trace,
   seed,
+  exploration,
+  witnessed,
   main,
 }: ProcedureStage) => {
   return {
@@ -295,6 +297,8 @@ const pickOutputStage = ({
     status,
     trace,
     seed,
+    exploration,
+    witnessed,
     main,
   }
 }

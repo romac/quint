@@ -248,6 +248,23 @@ const runCmd = {
   desc: 'Simulate a Quint specification and (optionally) check invariants',
   builder: (yargs: any) =>
     defaultOpts(yargs)
+      .option('strategy', {
+        desc: 'search strategy (systematic strategies use the TypeScript evaluator)',
+        choices: ['random', 'exhaustive', 'por', 'dpor'],
+        default: 'random',
+      })
+      .option('max-work', {
+        desc: 'limit action evaluations in systematic search, including dependency checks',
+        type: 'number',
+      })
+      .option('out-schedule', {
+        desc: 'save the explicit choice schedule of the reported systematic trace',
+        type: 'string',
+      })
+      .option('replay', {
+        desc: 'execute an explicit choice schedule saved by --out-schedule',
+        type: 'string',
+      })
       .option('main', {
         desc: 'name of the main module (by default, computed from filename)',
         type: 'string',
@@ -271,9 +288,8 @@ const runCmd = {
         default: 20,
       })
       .option('n-threads', {
-        desc: 'the number of threads to use when running simulations with the `rust` backend',
+        desc: 'the number of Rust simulation threads (default: available CPUs)',
         type: 'number',
-        default: os.cpus().length,
       })
       .option('init', {
         desc: 'name of the initializer action',
@@ -321,10 +337,9 @@ const runCmd = {
         default: false,
       })
       .option('backend', {
-        desc: 'the backend to use for simulation',
+        desc: 'the backend to use for simulation (default: rust for random, typescript for systematic)',
         type: 'string',
         choices: ['typescript', 'rust'],
-        default: 'rust',
       }),
   // Timeouts are postponed for:
   // https://github.com/informalsystems/quint/issues/633
@@ -446,6 +461,30 @@ const validate = (argv: any, opts: any) => {
     if (key !== '_' && !opts.array.includes(key) && Array.isArray(argv[key])) {
       throw new Error(`--${key} can not be specified more than once`)
     }
+  }
+  if (argv._[0] === 'run') {
+    const systematic = argv.strategy !== 'random' || argv.replay !== undefined
+    if (argv.backend === undefined) argv.backend = systematic ? 'typescript' : 'rust'
+    if (systematic) {
+      if (argv.backend !== 'typescript') throw new Error('Systematic exploration uses --backend=typescript')
+      if (
+        argv.seed !== undefined ||
+        argv.maxSamples !== undefined ||
+        argv.nTraces !== 1 ||
+        (argv.nThreads !== undefined && argv.nThreads !== 1)
+      ) {
+        throw new Error(
+          'Systematic exploration uses --max-steps and --max-work. Seed, sampling and parallel-run options apply to random runs.'
+        )
+      }
+      if (![argv.maxSteps, argv.maxWork ?? 0].every(n => Number.isSafeInteger(n) && n >= 0)) {
+        throw new Error('Exploration bounds must be nonnegative safe integers')
+      }
+      return true
+    }
+    if (argv.nThreads === undefined) argv['n-threads'] = argv.nThreads = os.cpus().length
+    if (argv.maxWork !== undefined || argv.outSchedule !== undefined)
+      throw new Error('--max-work and --out-schedule require a systematic strategy')
   }
   // Apply the effective default for --max-samples (for run and test commands).
   if ((argv['_'][0] === 'run' || argv['_'][0] === 'test') && argv['max-samples'] === undefined) {
