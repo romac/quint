@@ -1,0 +1,70 @@
+{
+  "model": "twophase",
+  "depth": 14,
+  "maxWork": 500000,
+  "windowMs": 8000,
+  "layers": [
+    {
+      "depth": 0,
+      "distinct": 1,
+      "newStates": 1,
+      "firstWitness": null,
+      "evaluations": 1,
+      "ms": 7.750330999999733
+    },
+    {
+      "depth": 1,
+      "distinct": 18,
+      "newStates": 17,
+      "firstWitness": null,
+      "evaluations": 35,
+      "ms": 36.94409199999973
+    },
+    {
+      "depth": 2,
+      "distinct": 154,
+      "newStates": 136,
+      "firstWitness": null,
+      "evaluations": 613,
+      "ms": 182.3514439999999
+    },
+    {
+      "depth": 3,
+      "distinct": 842,
+      "newStates": 688,
+      "firstWitness": null,
+      "evaluations": 5237,
+      "ms": 1415.308474
+    },
+    {
+      "depth": 4,
+      "distinct": 3342,
+      "newStates": 2500,
+      "firstWitness": null,
+      "evaluations": 28629,
+      "ms": 10814.05917
+    },
+    {
+      "depth": 5,
+      "distinct": 10398,
+      "newStates": 7056,
+      "firstWitness": null,
+      "evaluations": 113629,
+      "ms": 58535.07951
+    },
+    {
+      "depth": 6,
+      "distinct": 26806,
+      "newStates": 16408,
+      "firstWitness": null,
+      "evaluations": 353533,
+      "ms": 229730.179986
+    }
+  ],
+  "status": "incomplete",
+  "distinct": 37451,
+  "atWindow": 2878,
+  "firstWitness": null,
+  "evaluations": 500000,
+  "ms": 336205.602096
+}
